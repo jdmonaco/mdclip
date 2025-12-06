@@ -1,0 +1,29 @@
+[project]
+name = "mdclip"
+version = "0.1.0"
+description = "CLI tool to clip web pages to Markdown with YAML frontmatter"
+readme = "README.md"
+authors = [
+    { name = "Joe Monaco", email = "joe@selfmotion.net" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+mdclip = "mdclip.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.11,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "black>=25.11.0",
+    "mypy>=1.19.0",
+    "pytest>=9.0.1",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.8",
+]
