@@ -1,147 +1,114 @@
-"""Content extraction using gather-cli."""
+"""Content extraction using defuddle (Node.js)."""
 
+import json
 import shutil
 import subprocess
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from .templates import Template
 
-
-class GatherError(Exception):
-    """Error during content extraction with gather-cli."""
+class DefuddleError(Exception):
+    """Error during content extraction with defuddle."""
 
     pass
 
 
-class GatherNotInstalledError(GatherError):
-    """gather-cli is not installed."""
+class DefuddleNotInstalledError(DefuddleError):
+    """defuddle Node.js dependencies are not installed."""
 
     pass
 
 
-def check_gather_installed() -> bool:
-    """Check if gather-cli is installed and accessible."""
-    return shutil.which("gather") is not None
+class NodeNotInstalledError(DefuddleError):
+    """Node.js is not installed."""
+
+    pass
 
 
-def get_gather_version() -> str | None:
-    """Get the installed gather-cli version."""
-    if not check_gather_installed():
-        return None
-    try:
-        result = subprocess.run(
-            ["gather", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        return result.stdout.strip() or result.stderr.strip()
-    except (subprocess.TimeoutExpired, subprocess.SubprocessError):
-        return None
+def check_node_installed() -> bool:
+    """Check if Node.js is installed and accessible."""
+    return shutil.which("node") is not None
 
 
-def extract_title(url: str, timeout: int = 30) -> str:
-    """Extract the page title from a URL.
+def check_defuddle_installed() -> bool:
+    """Check if defuddle Node.js dependencies are installed.
 
-    Args:
-        url: The URL to extract title from
-        timeout: Timeout in seconds
-
-    Returns:
-        Page title, or domain name as fallback
+    Returns True if node_modules/defuddle exists in the package root.
     """
-    if not check_gather_installed():
-        raise GatherNotInstalledError(
-            "gather-cli is not installed. "
-            "Install with: brew tap ttscoff/thelab && brew install gather-cli"
-        )
-
-    try:
-        result = subprocess.run(
-            ["gather", "--title-only", url],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        title = result.stdout.strip()
-        if title:
-            return title
-    except subprocess.TimeoutExpired:
-        pass
-    except subprocess.SubprocessError as e:
-        raise GatherError(f"Failed to extract title: {e}") from e
-
-    # Fallback to domain name
-    parsed = urlparse(url)
-    return parsed.netloc or "Untitled"
+    package_root = Path(__file__).parent.parent.parent
+    node_modules = package_root / "node_modules" / "defuddle"
+    return node_modules.is_dir()
 
 
-def extract_content(
-    url: str,
-    options: list[str] | None = None,
-    timeout: int = 60,
-) -> str:
-    """Extract markdown content from a URL.
+def get_script_path() -> Path:
+    """Get the path to the defuddle extraction script."""
+    package_root = Path(__file__).parent.parent.parent
+    return package_root / "scripts" / "defuddle-extract.js"
+
+
+def extract_page(url: str, timeout: int = 60) -> dict[str, Any]:
+    """Extract content and metadata from a URL using defuddle.
 
     Args:
         url: The URL to extract content from
-        options: Additional gather-cli options
         timeout: Timeout in seconds
 
     Returns:
-        Markdown content
+        Dict with keys: title, author, description, published, content,
+        site, domain, wordCount
+
+    Raises:
+        NodeNotInstalledError: If Node.js is not installed
+        DefuddleNotInstalledError: If defuddle dependencies not installed
+        DefuddleError: On extraction failure
     """
-    if not check_gather_installed():
-        raise GatherNotInstalledError(
-            "gather-cli is not installed. "
-            "Install with: brew tap ttscoff/thelab && brew install gather-cli"
+    if not check_node_installed():
+        raise NodeNotInstalledError(
+            "Node.js is not installed. "
+            "Install from: https://nodejs.org/"
         )
 
-    cmd = ["gather", "--no-include-source"]
-    if options:
-        cmd.extend(options)
-    cmd.append(url)
+    if not check_defuddle_installed():
+        raise DefuddleNotInstalledError(
+            "defuddle is not installed. "
+            "Run 'npm install' in the mdclip directory."
+        )
+
+    script_path = get_script_path()
+    if not script_path.exists():
+        raise DefuddleError(f"Extraction script not found: {script_path}")
 
     try:
         result = subprocess.run(
-            cmd,
+            ["node", str(script_path), url],
             capture_output=True,
             text=True,
             timeout=timeout,
         )
-        return result.stdout.strip()
+
+        if result.returncode != 0:
+            # Try to parse error JSON from stderr
+            try:
+                error_data = json.loads(result.stderr)
+                raise DefuddleError(error_data.get("message", "Unknown error"))
+            except json.JSONDecodeError:
+                raise DefuddleError(result.stderr or "Unknown error")
+
+        # Parse the JSON output
+        try:
+            data = json.loads(result.stdout)
+        except json.JSONDecodeError as e:
+            raise DefuddleError(f"Failed to parse output: {e}") from e
+
+        # Ensure we have fallbacks for essential fields
+        if not data.get("title"):
+            parsed = urlparse(url)
+            data["title"] = parsed.netloc or "Untitled"
+
+        return data
+
     except subprocess.TimeoutExpired:
-        raise GatherError(f"Timeout extracting content from {url}") from None
+        raise DefuddleError(f"Timeout extracting content from {url}") from None
     except subprocess.SubprocessError as e:
-        raise GatherError(f"Failed to extract content: {e}") from e
-
-
-def build_gather_options(template: Template, config: dict[str, Any]) -> list[str]:
-    """Build gather-cli options from template and config.
-
-    Args:
-        template: The matched template
-        config: Global configuration
-
-    Returns:
-        List of command-line options for gather
-    """
-    options: list[str] = []
-
-    # Link formatting
-    if config.get("inline_links", True):
-        options.append("--inline-links")
-    else:
-        options.append("--no-inline-links")
-
-    if config.get("paragraph_links", False):
-        options.append("--paragraph-links")
-    else:
-        options.append("--no-paragraph-links")
-
-    # Template-specific options
-    if template.gather_opts:
-        options.extend(template.gather_opts)
-
-    return options
+        raise DefuddleError(f"Failed to run extraction: {e}") from e

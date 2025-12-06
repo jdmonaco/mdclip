@@ -36,6 +36,17 @@ def build_frontmatter(
         elif prop == "created":
             date_format = config.get("date_format", "%Y-%m-%d %H:%M")
             fm["created"] = datetime.now().strftime(date_format)
+        elif prop == "author":
+            # Author may be a string or list from defuddle
+            author = metadata.get("author")
+            if author:
+                fm["author"] = [author] if isinstance(author, str) else author
+        elif prop == "description":
+            if metadata.get("description"):
+                fm["description"] = metadata["description"]
+        elif prop == "published":
+            if metadata.get("published"):
+                fm["published"] = metadata["published"]
 
     # Add tags from template and CLI
     tags = list(template.tags) if template.tags else ["webclip"]
@@ -49,13 +60,7 @@ def build_frontmatter(
     if template.properties:
         fm.update(template.properties)
 
-    # Add extracted metadata if available
-    if metadata.get("author"):
-        fm["author"] = metadata["author"]
-    if metadata.get("description"):
-        fm["description"] = metadata["description"]
-
-    # Generate YAML with custom formatting
+    # Generate YAML
     yaml_content = yaml.dump(
         fm,
         default_flow_style=False,

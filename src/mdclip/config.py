@@ -9,14 +9,12 @@ import yaml
 # Default configuration values
 DEFAULT_CONFIG: dict[str, Any] = {
     "vault": "~/Documents/Obsidian/Notes",
-    "date_format": "%Y-%m-%d %H:%M",
+    "date_format": "%Y-%m-%d",
     "filename_date_format": "%Y-%m-%d",
     "default_folder": "Inbox/Clips",
-    "inline_links": True,
-    "paragraph_links": False,
     "include_source_link": False,
     "auto_format": False,
-    "default_properties": ["title", "source", "created"],
+    "default_properties": ["title", "source", "author", "created", "published", "description"],
     "templates": [
         {
             "name": "default",
@@ -35,18 +33,14 @@ DEFAULT_CONFIG_YAML = """\
 # Path to your Obsidian vault (or any directory for markdown notes)
 vault: ~/Documents/Obsidian/Notes
 
-# Date format for frontmatter 'created' field
-date_format: "%Y-%m-%d %H:%M"
+# Date format for frontmatter 'created' field (can be customized, e.g., "%Y-%m-%d %H:%M")
+date_format: "%Y-%m-%d"
 
 # Date format for filename templates
 filename_date_format: "%Y-%m-%d"
 
 # Default output folder (relative to vault)
 default_folder: Inbox/Clips
-
-# Link formatting options (passed to gather-cli)
-inline_links: true       # Use inline [text](url) links
-paragraph_links: false   # Add reference links after each paragraph
 
 # Include source link in body (not frontmatter)
 include_source_link: false
@@ -55,11 +49,15 @@ include_source_link: false
 # Disabled by default - set to true to enable
 auto_format: false
 
-# Default frontmatter properties (always included)
+# Default frontmatter properties (always included when available)
+# Supported: title, source, author, created, published, description, tags
 default_properties:
   - title
   - source
+  - author
   - created
+  - published
+  - description
   - tags
 
 # Templates define how URLs are processed based on pattern matching
@@ -91,8 +89,6 @@ templates:
       - code
       - stackoverflow
     filename: "{{title}}"
-    gather_opts:
-      - "--accepted-only"
 
   # Documentation sites
   - name: documentation

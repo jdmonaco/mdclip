@@ -1,0 +1,13 @@
+{
+  "name": "mdclip-extractor",
+  "version": "0.1.0",
+  "description": "Node.js content extractor for mdclip using defuddle",
+  "type": "module",
+  "scripts": {
+    "extract": "node scripts/defuddle-extract.js"
+  },
+  "dependencies": {
+    "defuddle": "^0.6.0",
+    "jsdom": "^24.0.0"
+  }
+}

@@ -20,7 +20,6 @@ class Template:
     filename: str = "{{title}}"
     triggers: list[str] = field(default_factory=list)
     properties: dict[str, Any] = field(default_factory=dict)
-    gather_opts: list[str] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Template":
@@ -32,7 +31,6 @@ class Template:
             filename=data.get("filename", "{{title}}"),
             triggers=data.get("triggers", []),
             properties=data.get("properties", {}),
-            gather_opts=data.get("gather_opts", []),
         )
 
 

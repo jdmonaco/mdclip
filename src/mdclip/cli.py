@@ -16,11 +16,12 @@ from .config import (
     merge_config,
 )
 from .extractor import (
-    GatherNotInstalledError,
-    build_gather_options,
-    check_gather_installed,
-    extract_content,
-    extract_title,
+    DefuddleError,
+    DefuddleNotInstalledError,
+    NodeNotInstalledError,
+    check_defuddle_installed,
+    check_node_installed,
+    extract_page,
 )
 from .frontmatter import build_frontmatter
 from .inputs import parse_input
@@ -38,7 +39,7 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
 Examples:
   mdclip --init-config
   mdclip --dry-run bookmarks.html
-  mdclip "https://github.com/ttscoff/gather-cli"
+  mdclip "https://github.com/kepano/defuddle"
   mdclip -o "Projects/Research" "https://example.com/article"
 """,
     )
@@ -183,21 +184,26 @@ def process_url(
     if args.dry_run:
         return None
 
-    # Extract content
-    title = extract_title(url)
+    # Extract content and metadata
+    page_data = extract_page(url)
+    title = page_data.get("title", "Untitled")
+    content = page_data.get("content", "")
+
     if args.verbose:
         print(f"  Title: {title}")
-
-    gather_opts = build_gather_options(template, config)
-    content = extract_content(url, gather_opts)
 
     if not content:
         print(f"  Warning: No content extracted from {url}", file=sys.stderr)
 
-    # Build metadata
+    # Build metadata from extracted data
     metadata = {
         "title": title,
         "url": url,
+        "author": page_data.get("author"),
+        "description": page_data.get("description"),
+        "published": page_data.get("published"),
+        "site": page_data.get("site"),
+        "domain": page_data.get("domain"),
     }
 
     # Generate frontmatter
@@ -208,8 +214,8 @@ def process_url(
         extra_tags=args.tags,
     )
 
-    # Assemble full note
-    full_content = frontmatter + content
+    # Assemble full note with title heading
+    full_content = frontmatter + f"# {title}\n\n" + content
 
     # Determine output path
     folder = args.output or template.folder
@@ -296,11 +302,19 @@ def main(args: list[str] | None = None) -> int:
         print("Error: No input provided. Use -h for help.", file=sys.stderr)
         return 1
 
-    # Check gather-cli is installed
-    if not check_gather_installed():
+    # Check Node.js and defuddle are installed
+    if not check_node_installed():
         print(
-            "Error: gather-cli is not installed.\n"
-            "Install with: brew tap ttscoff/thelab && brew install gather-cli",
+            "Error: Node.js is not installed.\n"
+            "Install from: https://nodejs.org/",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not check_defuddle_installed():
+        print(
+            "Error: defuddle is not installed.\n"
+            "Run 'npm install' in the mdclip directory.",
             file=sys.stderr,
         )
         return 1
@@ -327,9 +341,13 @@ def main(args: list[str] | None = None) -> int:
             result = process_url(url, config, parsed_args)
             if result or parsed_args.dry_run:
                 success_count += 1
-        except GatherNotInstalledError as e:
+        except (NodeNotInstalledError, DefuddleNotInstalledError) as e:
             print(f"Error: {e}", file=sys.stderr)
             return 1
+        except DefuddleError as e:
+            print(f"Error processing {url}: {e}", file=sys.stderr)
+            if parsed_args.verbose:
+                traceback.print_exc()
         except Exception as e:
             print(f"Error processing {url}: {e}", file=sys.stderr)
             if parsed_args.verbose:

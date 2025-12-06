@@ -5,7 +5,7 @@ A command-line tool that clips web pages to Markdown files with YAML frontmatter
 ## Features
 
 - **Template-based routing**: URLs are matched to templates that control output folder, tags, and frontmatter
-- **YAML frontmatter**: Automatic metadata including title, source URL, creation date, and tags
+- **YAML frontmatter**: Automatic metadata including title, author, source URL, creation date, description, and tags
 - **Multiple input formats**: Single URLs, bookmark exports, or text files with URL lists
 - **Optional formatting**: Post-process output with mdformat for consistent styling
 - **Batch processing**: Clip multiple URLs in one command
@@ -14,11 +14,13 @@ A command-line tool that clips web pages to Markdown files with YAML frontmatter
 
 ### Prerequisites
 
-**gather-cli** (required) - Extracts readable content from web pages:
+**Node.js** (required) - Used for content extraction via [defuddle](https://github.com/kepano/defuddle):
 
 ```bash
-brew tap ttscoff/thelab
-brew install gather-cli
+# macOS with Homebrew
+brew install node
+
+# Or download from https://nodejs.org/
 ```
 
 **mdformat** (optional) - Auto-formats output Markdown:
@@ -30,16 +32,18 @@ brew install mdformat
 ### Install mdclip
 
 ```bash
-# With pipx (recommended)
-pipx install mdclip
-
-# Or with pip
-pip install mdclip
-
-# Or from source
+# Clone the repository
 git clone https://github.com/jdmonaco/mdclip.git
 cd mdclip
+
+# Install Node.js dependencies
+npm install
+
+# Install Python package
 pip install -e .
+
+# Or with uv
+uv pip install -e .
 ```
 
 ## Quick Start
@@ -121,9 +125,8 @@ Configuration is stored in `~/.mdclip.yml`. Run `mdclip --init-config` to create
 # Path to your notes vault
 vault: ~/Documents/Obsidian/Notes
 
-# Date formats
-date_format: "%Y-%m-%d %H:%M"        # For frontmatter
-filename_date_format: "%Y-%m-%d"      # For filenames
+# Date format (for frontmatter 'created' and filenames)
+date_format: "%Y-%m-%d"
 
 # Default output folder (relative to vault)
 default_folder: Inbox/Clips
@@ -166,7 +169,11 @@ Each clipped page creates a Markdown file with YAML frontmatter:
 ---
 title: "Page Title"
 source: https://example.com/article
-created: 2024-01-15 14:30
+author:
+  - "Author Name"
+created: 2024-01-15
+published: 2024-01-10
+description: "A brief description of the page content"
 tags:
   - webclip
   - docs
@@ -176,6 +183,8 @@ tags:
 
 Content extracted from the web page...
 ```
+
+Metadata is automatically extracted using [defuddle](https://github.com/kepano/defuddle), the same library used by [Obsidian Web Clipper](https://obsidian.md/clipper).
 
 ## License
 
