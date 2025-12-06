@@ -49,9 +49,11 @@ def select_with_input(options: list[str], prompt: str = "Select:") -> str | None
         Selected option string, or None if user chooses "all" or cancels
     """
     console.print(f"\n[bold]{prompt}[/bold]")
+    # Calculate width needed for numbers to keep tree aligned
+    width = len(str(len(options)))
     for i, opt in enumerate(options, 1):
-        console.print(f"  [cyan]{i}[/cyan]) {opt}")
-    console.print("  [cyan]0[/cyan]) Process all URLs")
+        console.print(f"[cyan]{i:>{width}}[/cyan]) {opt}")
+    console.print(f"[cyan]{0:>{width}}[/cyan]) Process all URLs")
 
     try:
         choice = console.input("\nEnter number: ").strip()
@@ -75,11 +77,15 @@ def select_section(options: list[str], prompt: str = "Select a section:") -> str
     Returns:
         Selected section name, or None to process all
     """
-    if check_gum_available():
-        # Add "All sections" option for gum
-        gum_options = ["[All sections]"] + options
-        result = select_with_gum(gum_options, prompt)
-        if result == "[All sections]":
-            return None
-        return result
-    return select_with_input(options, prompt)
+    # Use numbered input for large lists (gum doesn't handle many options well)
+    MAX_GUM_OPTIONS = 30
+
+    if len(options) > MAX_GUM_OPTIONS or not check_gum_available():
+        return select_with_input(options, prompt)
+
+    # Add "All sections" option for gum
+    gum_options = ["[All sections]"] + options
+    result = select_with_gum(gum_options, prompt)
+    if result == "[All sections]":
+        return None
+    return result

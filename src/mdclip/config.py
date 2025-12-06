@@ -13,6 +13,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "filename_date_format": "%Y-%m-%d",
     "default_folder": "Inbox/Clips",
     "auto_format": False,
+    "skip_existing": False,
     "default_properties": ["title", "source", "author", "created", "published", "description"],
     "templates": [
         {
@@ -44,6 +45,11 @@ default_folder: Inbox/Clips
 # Auto-format output with mdformat (if installed)
 # Disabled by default - set to true to enable
 auto_format: false
+
+# Skip URLs if a file already exists with the same source URL
+# When false (default), appends (1), (2), etc. to filename
+# Can also be enabled per-run with --skip-existing flag
+skip_existing: false
 
 # Default frontmatter properties (always included when available)
 # Supported: title, source, author, created, published, description, tags

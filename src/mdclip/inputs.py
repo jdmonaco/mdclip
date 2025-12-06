@@ -1,12 +1,11 @@
 """Input parsing for mdclip - URLs, bookmarks HTML, and URL files."""
 
+import html
 import re
 import subprocess
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-
-from bs4 import BeautifulSoup, Tag
 
 
 class InputType(Enum):
@@ -131,6 +130,7 @@ def parse_bookmarks_html(path: Path) -> list[str]:
     """Parse URLs from a bookmarks HTML export file.
 
     Handles exports from Chrome, Firefox, Safari, etc.
+    Uses regex for fast parsing of large files.
 
     Args:
         path: Path to bookmarks HTML file
@@ -144,13 +144,14 @@ def parse_bookmarks_html(path: Path) -> list[str]:
         # Try with different encoding
         content = path.read_text(encoding="latin-1")
 
-    soup = BeautifulSoup(content, "html.parser")
+    # Fast regex extraction of URLs from HREF attributes
+    href_pattern = re.compile(r'<A\s+HREF="(https?://[^"]+)"', re.IGNORECASE)
 
     urls: list[str] = []
-    for link in soup.find_all("a", href=True):
-        href = str(link["href"])
-        if is_valid_url(href):
-            urls.append(href)
+    for match in href_pattern.finditer(content):
+        url = match.group(1)
+        if is_valid_url(url):
+            urls.append(url)
 
     return urls
 
@@ -259,6 +260,9 @@ def read_clipboard_urls() -> list[str]:
 def parse_bookmark_structure(path: Path) -> list[BookmarkSection]:
     """Parse bookmark HTML into hierarchical sections.
 
+    Uses a fast single-pass regex approach to handle large bookmark files
+    efficiently. Tracks nesting depth by counting <DL> and </DL> tags.
+
     Args:
         path: Path to bookmarks HTML file
 
@@ -270,50 +274,45 @@ def parse_bookmark_structure(path: Path) -> list[BookmarkSection]:
     except UnicodeDecodeError:
         content = path.read_text(encoding="latin-1")
 
-    soup = BeautifulSoup(content, "html.parser")
-    sections: list[BookmarkSection] = []
+    # Single-pass regex parsing - much faster than BeautifulSoup for large files
+    # Pattern matches: <DL>, </DL>, <DT><H3>title</H3>, <DT><A HREF="url">
+    token_pattern = re.compile(
+        r"<DL>|</DL>|<DT><H3[^>]*>([^<]+)</H3>|<DT><A\s+HREF=\"(https?://[^\"]+)\"",
+        re.IGNORECASE,
+    )
 
-    def parse_dl(dl: Tag, depth: int = 0) -> list[BookmarkSection]:
-        """Recursively parse a DL element."""
-        result: list[BookmarkSection] = []
-        current_section: BookmarkSection | None = None
+    root_sections: list[BookmarkSection] = []
+    section_stack: list[BookmarkSection] = []
+    depth = 0
 
-        for child in dl.children:
-            if not isinstance(child, Tag):
-                continue
+    for match in token_pattern.finditer(content):
+        token = match.group(0).upper()
 
-            if child.name == "dt":
-                # Check for H3 (section header) or A (bookmark link)
-                h3 = child.find("h3")
-                if h3:
-                    # New section
-                    title = h3.get_text(strip=True)
-                    current_section = BookmarkSection(title=title, depth=depth)
-                    result.append(current_section)
+        if token == "<DL>":
+            depth += 1
+        elif token == "</DL>":
+            depth -= 1
+            # Pop sections that are now closed
+            while section_stack and section_stack[-1].depth >= depth:
+                section_stack.pop()
+        elif match.group(1):
+            # H3 folder title - decode HTML entities like &amp; -> &
+            title = html.unescape(match.group(1).strip())
+            section = BookmarkSection(title=title, depth=depth)
 
-                    # Check for nested DL
-                    nested_dl = child.find("dl")
-                    if nested_dl and isinstance(nested_dl, Tag):
-                        current_section.children = parse_dl(nested_dl, depth + 1)
-                else:
-                    # Bookmark link
-                    link = child.find("a", href=True)
-                    if link:
-                        href = str(link.get("href", ""))
-                        if is_valid_url(href):
-                            if current_section:
-                                current_section.urls.append(href)
-                            elif result:
-                                result[-1].urls.append(href)
+            if section_stack:
+                section_stack[-1].children.append(section)
+            else:
+                root_sections.append(section)
 
-        return result
+            section_stack.append(section)
+        elif match.group(2):
+            # URL
+            url = match.group(2)
+            if section_stack and is_valid_url(url):
+                section_stack[-1].urls.append(url)
 
-    # Find the main DL element
-    main_dl = soup.find("dl")
-    if main_dl and isinstance(main_dl, Tag):
-        sections = parse_dl(main_dl)
-
-    return sections
+    return root_sections
 
 
 def get_urls_from_section(section: BookmarkSection) -> list[str]:
@@ -331,23 +330,60 @@ def get_urls_from_section(section: BookmarkSection) -> list[str]:
     return urls
 
 
-def flatten_sections(sections: list[BookmarkSection], prefix: str = "") -> list[tuple[str, BookmarkSection]]:
-    """Flatten hierarchical sections into a list with display names.
+def flatten_sections(
+    sections: list[BookmarkSection],
+    _depth: int = 0,
+    _is_last_stack: list[bool] | None = None,
+) -> list[tuple[str, BookmarkSection]]:
+    """Flatten hierarchical sections into a list with tree-style display names.
+
+    Uses box-drawing characters to show hierarchy:
+    ├── for items with siblings below
+    └── for last item in a group
+    │   for continuation lines
 
     Args:
         sections: List of BookmarkSection objects
-        prefix: Prefix for nested sections
+        _depth: Current depth (internal use)
+        _is_last_stack: Track which ancestors are last in their group (internal use)
 
     Returns:
         List of (display_name, section) tuples
     """
+    if _is_last_stack is None:
+        _is_last_stack = []
+
     result: list[tuple[str, BookmarkSection]] = []
-    for section in sections:
-        display_name = f"{prefix}{section.title}" if prefix else section.title
+
+    for i, section in enumerate(sections):
+        is_last = i == len(sections) - 1
+
+        # Build the display prefix with box-drawing characters
+        if _depth == 0:
+            # Root level - no tree prefix
+            display_prefix = ""
+        else:
+            # Build prefix from ancestor continuation lines
+            # Skip first element (root level has no visual representation)
+            display_prefix = ""
+            for ancestor_is_last in _is_last_stack[1:]:
+                display_prefix += "    " if ancestor_is_last else "│   "
+            # Add branch for this item
+            display_prefix += "└── " if is_last else "├── "
+
+        count_str = f" ({section.total_urls})" if section.total_urls > 0 else ""
+        display_name = f"{display_prefix}{section.title}{count_str}"
+
         if section.total_urls > 0:
-            count_str = f" ({section.total_urls} URLs)"
-            result.append((f"{display_name}{count_str}", section))
-        for child in section.children:
-            child_results = flatten_sections([child], prefix=f"{display_name} > ")
+            result.append((display_name, section))
+
+        # Recurse into children
+        if section.children:
+            child_results = flatten_sections(
+                section.children,
+                _depth=_depth + 1,
+                _is_last_stack=_is_last_stack + [is_last],
+            )
             result.extend(child_results)
+
     return result

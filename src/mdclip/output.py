@@ -1,9 +1,63 @@
 """File output handling for mdclip."""
 
+import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import NamedTuple
+
+# Pattern to extract source URL from YAML frontmatter
+FRONTMATTER_SOURCE_PATTERN = re.compile(
+    r"^---\s*\n.*?^source:\s*['\"]?(https?://[^\s'\"]+)['\"]?\s*$.*?^---\s*$",
+    re.MULTILINE | re.DOTALL,
+)
+
+
+class FileExistsResult(NamedTuple):
+    """Result of checking if a file exists and matches the source URL."""
+
+    exists: bool
+    same_source: bool
+    path: Path
+
+
+def extract_source_url(filepath: Path) -> str | None:
+    """Extract the source URL from an existing markdown file's frontmatter.
+
+    Args:
+        filepath: Path to the markdown file
+
+    Returns:
+        The source URL if found, None otherwise
+    """
+    try:
+        content = filepath.read_text(encoding="utf-8")
+        match = FRONTMATTER_SOURCE_PATTERN.search(content)
+        if match:
+            return match.group(1)
+    except (OSError, UnicodeDecodeError):
+        pass
+    return None
+
+
+def check_existing_file(base_path: Path, source_url: str) -> FileExistsResult:
+    """Check if a file exists and whether it has the same source URL.
+
+    Args:
+        base_path: The desired file path
+        source_url: The URL being processed
+
+    Returns:
+        FileExistsResult with exists, same_source, and path
+    """
+    if not base_path.exists():
+        return FileExistsResult(exists=False, same_source=False, path=base_path)
+
+    existing_source = extract_source_url(base_path)
+    same_source = existing_source == source_url
+
+    return FileExistsResult(exists=True, same_source=same_source, path=base_path)
 
 
 def resolve_output_path(folder: str, vault: Path) -> Path:

@@ -53,7 +53,7 @@ def confirm(prompt: str, default: bool = False) -> bool:
     Returns:
         True if user confirms, False otherwise
     """
-    suffix = "[Y/n]" if default else "[y/N]"
+    suffix = "(Y/n)" if default else "(y/N)"
     try:
         response = console.input(f"{prompt} {suffix}: ").strip().lower()
         if not response:

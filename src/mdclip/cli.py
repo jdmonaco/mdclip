@@ -9,10 +9,8 @@ from urllib.parse import urlparse
 
 from . import __version__
 from .config import (
-    config_exists,
     get_config_path,
     get_template_by_name,
-    init_config,
     load_config,
     merge_config,
 )
@@ -35,7 +33,13 @@ from .inputs import (
     parse_input,
     read_clipboard_urls,
 )
-from .output import format_markdown, get_unique_filepath, resolve_output_path, write_note
+from .output import (
+    check_existing_file,
+    format_markdown,
+    get_unique_filepath,
+    resolve_output_path,
+    write_note,
+)
 from .selector import select_section
 from .templates import Template, match_template, render_filename, sanitize_filename, slugify
 
@@ -47,65 +51,87 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         prog="mdclip",
-        description="Clip web pages to Markdown with YAML frontmatter",
+        description="Clip web pages to Markdown with YAML frontmatter.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-  mdclip --init-config
+  mdclip "https://example.com/article"
+  mdclip -o "Reference/Papers" "https://arxiv.org/abs/..."
   mdclip --dry-run bookmarks.html
-  mdclip "https://github.com/kepano/defuddle"
-  mdclip -o "Projects/Research" "https://example.com/article"
+  mdclip --skip-existing urls.txt
 """,
     )
 
+    # Input
     parser.add_argument(
         "input",
         nargs="*",
         metavar="INPUT",
-        help="URL(s), path to bookmarks HTML, or text file with URLs",
+        help="URL, bookmarks HTML file, or text file with URLs (reads clipboard if omitted)",
     )
 
+    # Output control
     parser.add_argument(
         "-o", "--output",
-        metavar="PATH",
-        help="Override output folder (relative to vault or absolute)",
-    )
-
-    parser.add_argument(
-        "-v", "--vault",
-        metavar="PATH",
-        help="Override vault path",
+        metavar="FOLDER",
+        help="Output folder (relative to vault or absolute path)",
     )
 
     parser.add_argument(
         "-t", "--template",
         metavar="NAME",
-        help="Force specific template (bypass pattern matching)",
+        help="Use named template (bypasses URL pattern matching)",
     )
 
     parser.add_argument(
         "--tags",
         nargs="+",
         metavar="TAG",
-        help="Additional tags to append",
+        help="Additional tags to include in frontmatter",
+    )
+
+    # Behavior
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip URLs that already have a clipped file",
     )
 
     parser.add_argument(
-        "--dry-run",
+        "-n", "--dry-run",
         action="store_true",
         help="Show what would be done without writing files",
     )
 
     parser.add_argument(
-        "--config",
-        metavar="PATH",
-        help="Use alternate config file",
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts",
     )
 
     parser.add_argument(
-        "--init-config",
+        "--all-sections",
         action="store_true",
-        help="Initialize default config file and exit",
+        help="Process all bookmark sections without prompting",
+    )
+
+    parser.add_argument(
+        "--no-format",
+        action="store_true",
+        help="Skip mdformat post-processing",
+    )
+
+    # Configuration
+    parser.add_argument(
+        "--vault",
+        metavar="PATH",
+        help="Override vault path from config",
+    )
+
+    parser.add_argument(
+        "--config",
+        metavar="FILE",
+        help="Use alternate config file",
     )
 
     parser.add_argument(
@@ -117,25 +143,7 @@ Examples:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Verbose output",
-    )
-
-    parser.add_argument(
-        "--no-format",
-        action="store_true",
-        help="Skip mdformat post-processing",
-    )
-
-    parser.add_argument(
-        "-y", "--yes",
-        action="store_true",
-        help="Skip confirmation prompt for many URLs",
-    )
-
-    parser.add_argument(
-        "--all-sections",
-        action="store_true",
-        help="Process all bookmark sections without prompting",
+        help="Show detailed output",
     )
 
     parser.add_argument(
@@ -258,9 +266,27 @@ def process_url(
     }
     filename = render_filename(filename_template, filename_vars)
     filename = sanitize_filename(filename) + ".md"
+    base_path = output_folder / filename
+
+    # Check for existing file
+    skip_existing = args.skip_existing or config.get("skip_existing", False)
+    existing = check_existing_file(base_path, url)
+
+    if existing.exists:
+        if existing.same_source:
+            if skip_existing:
+                # Skip this URL - file already exists with same source
+                info(f"Skipped (exists): {filename}")
+                return None
+            # Same source but not skipping - use unique filename
+            filepath = get_unique_filepath(base_path)
+        else:
+            # Different source URL - always use unique filename
+            filepath = get_unique_filepath(base_path)
+    else:
+        filepath = base_path
 
     # Write file
-    filepath = get_unique_filepath(output_folder / filename)
     write_note(filepath, full_content)
 
     # Format if enabled
@@ -289,20 +315,6 @@ def main(args: list[str] | None = None) -> int:
         Exit code (0 for success)
     """
     parsed_args = parse_args(args)
-
-    # Handle --init-config
-    if parsed_args.init_config:
-        if config_exists():
-            error(f"Config file already exists: {Path.home() / '.mdclip.yml'}")
-            return 1
-        try:
-            path = init_config()
-            success(f"Created config file: {path}")
-            info("Edit this file to customize vault path and templates.")
-            return 0
-        except Exception as e:
-            error(f"Error creating config: {e}")
-            return 1
 
     # Load configuration (auto-creates if missing)
     config_path = Path(parsed_args.config) if parsed_args.config else None
@@ -374,7 +386,9 @@ def main(args: list[str] | None = None) -> int:
         and not parsed_args.all_sections
         and not parsed_args.yes
     ):
-        sections = parse_bookmark_structure(bookmark_path)
+        with create_spinner("Parsing bookmark structure...") as progress:
+            progress.add_task("Parsing bookmark structure...", total=None)
+            sections = parse_bookmark_structure(bookmark_path)
         if sections:
             flat_sections = flatten_sections(sections)
             if len(flat_sections) > 1:

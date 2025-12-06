@@ -6,13 +6,24 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 
 # Pattern to fix dropcap letters separated from their word
 # Matches: single capital letter, blank line, then lowercase continuation
 # Example: "K\n\nwan's team" -> "Kwan's team"
 DROPCAP_PATTERN = re.compile(r"^([A-Z])\n\n([a-z])", re.MULTILINE)
+
+# Pattern to fix markdown links broken across multiple lines
+# Matches: [\n\n## Title\n\n](url) -> [Title](url)
+# Handles both escaped (\[) and unescaped ([) brackets
+# The link text may have optional heading markers (##)
+BROKEN_LINK_PATTERN = re.compile(
+    r"\\?\[\s*\n+(?:#{1,6}\s+)?([^\n]+?)\s*\n+\\?\]\(([^)]+)\)"
+)
+
+# Pattern to match markdown links: [text](url)
+MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 
 class DefuddleError(Exception):
@@ -54,14 +65,17 @@ def get_script_path() -> Path:
     return package_root / "scripts" / "defuddle-extract.js"
 
 
-def cleanup_content(content: str) -> str:
+def cleanup_content(content: str, source_url: str | None = None) -> str:
     """Clean up extracted markdown content.
 
     Fixes common extraction artifacts like:
     - Dropcap letters separated from their word (e.g., "K\\n\\nwan's" -> "Kwan's")
+    - Markdown links broken across multiple lines (e.g., "\\[\\n## Title\\n\\](url)")
+    - Relative URLs converted to absolute URLs based on source
 
     Args:
         content: Raw markdown content from defuddle
+        source_url: The source URL for resolving relative links
 
     Returns:
         Cleaned markdown content
@@ -72,7 +86,44 @@ def cleanup_content(content: str) -> str:
     # Fix dropcap letters separated by blank line from rest of word
     content = DROPCAP_PATTERN.sub(r"\1\2", content)
 
+    # Fix markdown links broken across multiple lines
+    content = BROKEN_LINK_PATTERN.sub(r"[\1](\2)", content)
+
+    # Convert relative URLs to absolute URLs
+    if source_url:
+        content = _resolve_relative_links(content, source_url)
+
     return content
+
+
+def _resolve_relative_links(content: str, source_url: str) -> str:
+    """Convert relative URLs in markdown links to absolute URLs.
+
+    Args:
+        content: Markdown content with links
+        source_url: Base URL for resolving relative paths
+
+    Returns:
+        Content with relative URLs converted to absolute
+    """
+
+    def replace_link(match: re.Match[str]) -> str:
+        text = match.group(1)
+        url = match.group(2)
+
+        # Skip if already absolute (http, https, mailto, etc.)
+        if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", url):
+            return match.group(0)
+
+        # Skip anchor-only links
+        if url.startswith("#"):
+            return match.group(0)
+
+        # Resolve relative URL against source
+        absolute_url = urljoin(source_url, url)
+        return f"[{text}]({absolute_url})"
+
+    return MARKDOWN_LINK_PATTERN.sub(replace_link, content)
 
 
 def extract_page(url: str, timeout: int = 60) -> dict[str, Any]:
@@ -136,7 +187,7 @@ def extract_page(url: str, timeout: int = 60) -> dict[str, Any]:
 
         # Clean up content artifacts
         if data.get("content"):
-            data["content"] = cleanup_content(data["content"])
+            data["content"] = cleanup_content(data["content"], source_url=url)
 
         return data
 
