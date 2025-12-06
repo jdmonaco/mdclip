@@ -12,7 +12,6 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "date_format": "%Y-%m-%d",
     "filename_date_format": "%Y-%m-%d",
     "default_folder": "Inbox/Clips",
-    "include_source_link": False,
     "auto_format": False,
     "default_properties": ["title", "source", "author", "created", "published", "description"],
     "templates": [
@@ -41,9 +40,6 @@ filename_date_format: "%Y-%m-%d"
 
 # Default output folder (relative to vault)
 default_folder: Inbox/Clips
-
-# Include source link in body (not frontmatter)
-include_source_link: false
 
 # Auto-format output with mdformat (if installed)
 # Disabled by default - set to true to enable
