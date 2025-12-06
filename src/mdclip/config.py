@@ -167,35 +167,41 @@ def init_config(path: Path | None = None) -> Path:
     return config_path
 
 
-def load_config(path: Path | None = None) -> dict[str, Any]:
-    """Load configuration from file, falling back to defaults.
+def load_config(path: Path | None = None) -> tuple[dict[str, Any], bool]:
+    """Load configuration from file, auto-creating if missing.
 
     Args:
         path: Optional path to config file. Uses ~/.mdclip.yml if not specified.
 
     Returns:
-        Configuration dictionary with all settings.
+        Tuple of (config dict, was_created flag). was_created is True if
+        config file was auto-created on this call.
     """
     config_path = path or get_config_path()
+    was_created = False
 
     # Start with defaults
     config = DEFAULT_CONFIG.copy()
 
-    if config_path.exists():
-        try:
-            with open(config_path, encoding="utf-8") as f:
-                file_config = yaml.safe_load(f) or {}
-        except yaml.YAMLError as e:
-            raise ValueError(f"Invalid YAML in config file {config_path}: {e}") from e
+    if not config_path.exists():
+        # Auto-create config file
+        config_path.write_text(DEFAULT_CONFIG_YAML, encoding="utf-8")
+        was_created = True
 
-        # Merge file config into defaults
-        config = _merge_dicts(config, file_config)
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            file_config = yaml.safe_load(f) or {}
+    except yaml.YAMLError as e:
+        raise ValueError(f"Invalid YAML in config file {config_path}: {e}") from e
+
+    # Merge file config into defaults
+    config = _merge_dicts(config, file_config)
 
     # Expand paths
     if "vault" in config:
         config["vault"] = str(Path(config["vault"]).expanduser())
 
-    return config
+    return config, was_created
 
 
 def merge_config(

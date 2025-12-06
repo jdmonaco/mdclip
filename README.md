@@ -6,9 +6,12 @@ A command-line tool that clips web pages to Markdown files with YAML frontmatter
 
 - **Template-based routing**: URLs are matched to templates that control output folder, tags, and frontmatter
 - **YAML frontmatter**: Automatic metadata including title, author, source URL, creation date, description, and tags
-- **Multiple input formats**: Single URLs, bookmark exports, or text files with URL lists
+- **Multiple input formats**: Single URLs, bookmark exports, markdown files with links, or text files with URL lists
+- **Clipboard support**: Automatically reads URLs from clipboard when no input is provided (macOS)
+- **Bookmark section selection**: For large bookmark files, interactively select which folder to process
 - **Optional formatting**: Post-process output with mdformat for consistent styling
-- **Batch processing**: Clip multiple URLs in one command
+- **Batch processing**: Clip multiple URLs in one command with confirmation for large batches
+- **Rich console output**: Colored status messages and progress spinners
 
 ## Installation
 
@@ -49,14 +52,11 @@ uv pip install -e .
 ## Quick Start
 
 ```bash
-# Initialize configuration file
-mdclip --init-config
-
-# Edit ~/.mdclip.yml to set your vault path
-vim ~/.mdclip.yml
-
-# Clip a URL
+# Clip a URL (config file is auto-created on first run)
 mdclip "https://github.com/kepano/defuddle"
+
+# Edit ~/.mdclip.yml to customize vault path and templates
+vim ~/.mdclip.yml
 ```
 
 ## Usage
@@ -64,13 +64,14 @@ mdclip "https://github.com/kepano/defuddle"
 ```
 usage: mdclip [-h] [-o PATH] [-v PATH] [-t NAME] [--tags TAG [TAG ...]]
               [--dry-run] [--config PATH] [--init-config] [--list-templates]
-              [--verbose] [--no-format] [--version]
+              [--verbose] [--no-format] [-y] [--all-sections] [--version]
               [INPUT ...]
 
 Clip web pages to Markdown with YAML frontmatter
 
 positional arguments:
-  INPUT                 URL(s), path to bookmarks HTML, or text file with URLs
+  INPUT                 URL(s), path to bookmarks HTML, markdown file, or text
+                        file with URLs. If omitted, reads from clipboard.
 
 options:
   -h, --help            show this help message and exit
@@ -84,6 +85,8 @@ options:
   --list-templates      List configured templates and exit
   --verbose             Verbose output
   --no-format           Skip mdformat post-processing
+  -y, --yes             Skip confirmation prompt for many URLs
+  --all-sections        Process all bookmark sections without prompting
   --version             show program's version number and exit
 ```
 
@@ -92,6 +95,9 @@ options:
 ```bash
 # Clip a single URL
 mdclip "https://docs.python.org/3/library/pathlib.html"
+
+# Clip from clipboard (copy a URL, then run without arguments)
+mdclip
 
 # Clip multiple URLs
 mdclip "https://github.com/..." "https://stackoverflow.com/..."
@@ -105,8 +111,17 @@ mdclip -o "Projects/Research" "https://arxiv.org/abs/..."
 # Add extra tags
 mdclip --tags python tutorial "https://realpython.com/..."
 
-# Clip from a bookmarks export
+# Clip from a bookmarks export (prompts to select a section if >10 URLs)
 mdclip ~/Downloads/bookmarks.html
+
+# Process all bookmark sections without prompting
+mdclip --all-sections ~/Downloads/bookmarks.html
+
+# Skip confirmation for large batches
+mdclip -y bookmarks.html
+
+# Clip from a markdown file (extracts URLs from [text](url) links)
+mdclip links.md
 
 # Clip from a text file (one URL per line)
 mdclip urls.txt
@@ -117,7 +132,7 @@ mdclip -t documentation "https://example.com/docs"
 
 ## Configuration
 
-Configuration is stored in `~/.mdclip.yml`. Run `mdclip --init-config` to create a default config with example templates.
+Configuration is stored in `~/.mdclip.yml`. The config file is automatically created with sensible defaults on first run. You can also run `mdclip --init-config` to explicitly create it.
 
 ### Key Settings
 

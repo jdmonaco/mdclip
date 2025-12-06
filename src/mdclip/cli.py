@@ -10,11 +10,13 @@ from urllib.parse import urlparse
 from . import __version__
 from .config import (
     config_exists,
+    get_config_path,
     get_template_by_name,
     init_config,
     load_config,
     merge_config,
 )
+from .console import confirm, console, create_spinner, error, info, success, warning
 from .extractor import (
     DefuddleError,
     DefuddleNotInstalledError,
@@ -24,9 +26,21 @@ from .extractor import (
     extract_page,
 )
 from .frontmatter import build_frontmatter
-from .inputs import parse_input
+from .inputs import (
+    InputType,
+    detect_input_type,
+    flatten_sections,
+    get_urls_from_section,
+    parse_bookmark_structure,
+    parse_input,
+    read_clipboard_urls,
+)
 from .output import format_markdown, get_unique_filepath, resolve_output_path, write_note
+from .selector import select_section
 from .templates import Template, match_template, render_filename, sanitize_filename, slugify
+
+# Confirmation threshold for batch processing
+URL_CONFIRM_THRESHOLD = 10
 
 
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:
@@ -113,6 +127,18 @@ Examples:
     )
 
     parser.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt for many URLs",
+    )
+
+    parser.add_argument(
+        "--all-sections",
+        action="store_true",
+        help="Process all bookmark sections without prompting",
+    )
+
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
@@ -125,27 +151,26 @@ def list_templates(config: dict) -> None:
     """Print configured templates."""
     templates = config.get("templates", [])
     if not templates:
-        print("No templates configured.")
+        console.print("No templates configured.")
         return
 
-    print("Configured templates:\n")
+    console.print("[bold]Configured templates:[/bold]\n")
     for t in templates:
         name = t.get("name", "unnamed")
         folder = t.get("folder", "Inbox/Clips")
         triggers = t.get("triggers", [])
         tags = t.get("tags", [])
 
-        print(f"  {name}")
-        print(f"    Folder: {folder}")
+        console.print(f"  [cyan]{name}[/cyan]")
+        console.print(f"    Folder: {folder}")
         if triggers:
-            print(f"    Triggers: {', '.join(triggers[:3])}", end="")
+            trigger_str = ", ".join(triggers[:3])
             if len(triggers) > 3:
-                print(f" (+{len(triggers) - 3} more)")
-            else:
-                print()
+                trigger_str += f" (+{len(triggers) - 3} more)"
+            console.print(f"    Triggers: {trigger_str}")
         if tags:
-            print(f"    Tags: {', '.join(tags)}")
-        print()
+            console.print(f"    Tags: {', '.join(tags)}")
+        console.print()
 
 
 def process_url(
@@ -163,14 +188,11 @@ def process_url(
     Returns:
         Path to created file, or None if dry-run
     """
-    if args.verbose:
-        print(f"Processing: {url}")
-
     # Match template
     if args.template:
         template_dict = get_template_by_name(args.template, config)
         if template_dict is None:
-            print(f"  Warning: Template '{args.template}' not found, using default", file=sys.stderr)
+            warning(f"Template '{args.template}' not found, using default")
             template = match_template(url, config.get("templates", []))
         else:
             template = Template.from_dict(template_dict)
@@ -178,22 +200,26 @@ def process_url(
         template = match_template(url, config.get("templates", []))
 
     if args.verbose or args.dry_run:
-        print(f"  Template: {template.name}")
-        print(f"  Folder: {template.folder}")
+        info(f"Template: {template.name}")
+        info(f"Folder: {template.folder}")
 
     if args.dry_run:
+        info(f"[dry-run] Would process: {url}")
         return None
 
-    # Extract content and metadata
-    page_data = extract_page(url)
+    # Extract content and metadata with spinner
+    with create_spinner() as progress:
+        progress.add_task(f"Extracting: {url}", total=None)
+        page_data = extract_page(url)
+
     title = page_data.get("title", "Untitled")
     content = page_data.get("content", "")
 
     if args.verbose:
-        print(f"  Title: {title}")
+        info(f"Title: {title}")
 
     if not content:
-        print(f"  Warning: No content extracted from {url}", file=sys.stderr)
+        warning(f"No content extracted from {url}")
 
     # Build metadata from extracted data
     metadata = {
@@ -241,14 +267,14 @@ def process_url(
     if config.get("auto_format") and not args.no_format:
         if format_markdown(filepath):
             if args.verbose:
-                print("  Formatted with mdformat")
+                info("Formatted with mdformat")
 
     # Print relative path if within vault
     try:
         rel_path = filepath.relative_to(vault)
-        print(f"  Saved: {rel_path}")
+        success(f"Saved: {rel_path}")
     except ValueError:
-        print(f"  Saved: {filepath}")
+        success(f"Saved: {filepath}")
 
     return filepath
 
@@ -267,22 +293,26 @@ def main(args: list[str] | None = None) -> int:
     # Handle --init-config
     if parsed_args.init_config:
         if config_exists():
-            print(f"Config file already exists: {Path.home() / '.mdclip.yml'}", file=sys.stderr)
+            error(f"Config file already exists: {Path.home() / '.mdclip.yml'}")
             return 1
         try:
             path = init_config()
-            print(f"Created config file: {path}")
+            success(f"Created config file: {path}")
+            info("Edit this file to customize vault path and templates.")
             return 0
         except Exception as e:
-            print(f"Error creating config: {e}", file=sys.stderr)
+            error(f"Error creating config: {e}")
             return 1
 
-    # Load configuration
+    # Load configuration (auto-creates if missing)
     config_path = Path(parsed_args.config) if parsed_args.config else None
     try:
-        config = load_config(config_path)
+        config, was_created = load_config(config_path)
+        if was_created:
+            info(f"Created config file: {get_config_path()}")
+            info("Edit this file to customize vault path and templates.")
     except Exception as e:
-        print(f"Error loading config: {e}", file=sys.stderr)
+        error(f"Error loading config: {e}")
         return 1
 
     # Apply CLI overrides
@@ -297,67 +327,106 @@ def main(args: list[str] | None = None) -> int:
         list_templates(config)
         return 0
 
-    # Check for inputs
+    # Check for inputs - try clipboard if none provided
     if not parsed_args.input:
-        print("Error: No input provided. Use -h for help.", file=sys.stderr)
-        return 1
+        clipboard_urls = read_clipboard_urls()
+        if clipboard_urls:
+            info(f"Reading {len(clipboard_urls)} URL(s) from clipboard")
+            parsed_args.input = clipboard_urls
+        else:
+            error("No input provided and clipboard empty. Use -h for help.")
+            return 1
 
     # Check Node.js and defuddle are installed
     if not check_node_installed():
-        print(
-            "Error: Node.js is not installed.\n"
-            "Install from: https://nodejs.org/",
-            file=sys.stderr,
-        )
+        error("Node.js is not installed.")
+        info("Install from: https://nodejs.org/")
         return 1
 
     if not check_defuddle_installed():
-        print(
-            "Error: defuddle is not installed.\n"
-            "Run 'npm install' in the mdclip directory.",
-            file=sys.stderr,
-        )
+        error("defuddle is not installed.")
+        info("Run 'npm install' in the mdclip directory.")
         return 1
 
     # Parse inputs to URLs
     urls: list[str] = []
+    bookmark_path: Path | None = None
+
     for input_item in parsed_args.input:
+        # Check if this is a bookmark file for section selection
+        input_type = detect_input_type(input_item)
+        if input_type == InputType.BOOKMARKS_HTML:
+            bookmark_path = Path(input_item).expanduser()
+
         parsed_urls = parse_input(input_item)
         if not parsed_urls and parsed_args.verbose:
-            print(f"  Warning: No URLs found in '{input_item}'", file=sys.stderr)
+            warning(f"No URLs found in '{input_item}'")
         urls.extend(parsed_urls)
 
     if not urls:
-        print("No valid URLs found in input", file=sys.stderr)
+        error("No valid URLs found in input")
         return 1
 
+    # Bookmark section selection for large bookmark files
+    if (
+        bookmark_path
+        and len(urls) > URL_CONFIRM_THRESHOLD
+        and not parsed_args.all_sections
+        and not parsed_args.yes
+    ):
+        sections = parse_bookmark_structure(bookmark_path)
+        if sections:
+            flat_sections = flatten_sections(sections)
+            if len(flat_sections) > 1:
+                section_names = [name for name, _ in flat_sections]
+                selected = select_section(
+                    section_names,
+                    f"Bookmark file has {len(urls)} URLs. Select a section:",
+                )
+                if selected:
+                    # Find the selected section and get its URLs
+                    for name, section in flat_sections:
+                        if name == selected:
+                            urls = get_urls_from_section(section)
+                            info(f"Selected '{section.title}' with {len(urls)} URLs")
+                            break
+
     if parsed_args.verbose:
-        print(f"Found {len(urls)} URL(s) to process\n")
+        info(f"Found {len(urls)} URL(s) to process")
+
+    # Confirm before processing many URLs
+    if len(urls) > URL_CONFIRM_THRESHOLD and not parsed_args.yes:
+        if not confirm(f"Process {len(urls)} URLs?"):
+            info("Aborted.")
+            return 0
 
     # Process each URL
-    success_count = 0
+    processed_count = 0
     for url in urls:
         try:
             result = process_url(url, config, parsed_args)
             if result or parsed_args.dry_run:
-                success_count += 1
+                processed_count += 1
         except (NodeNotInstalledError, DefuddleNotInstalledError) as e:
-            print(f"Error: {e}", file=sys.stderr)
+            error(str(e))
             return 1
         except DefuddleError as e:
-            print(f"Error processing {url}: {e}", file=sys.stderr)
+            error(f"Processing {url}: {e}")
             if parsed_args.verbose:
                 traceback.print_exc()
         except Exception as e:
-            print(f"Error processing {url}: {e}", file=sys.stderr)
+            error(f"Processing {url}: {e}")
             if parsed_args.verbose:
                 traceback.print_exc()
 
     # Summary
     if len(urls) > 1:
-        print(f"\nProcessed {success_count}/{len(urls)} URLs successfully")
+        if processed_count == len(urls):
+            success(f"Processed {processed_count}/{len(urls)} URLs")
+        else:
+            warning(f"Processed {processed_count}/{len(urls)} URLs")
 
-    return 0 if success_count > 0 else 1
+    return 0 if processed_count > 0 else 1
 
 
 if __name__ == "__main__":
