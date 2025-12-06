@@ -1,11 +1,18 @@
 """Content extraction using defuddle (Node.js)."""
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+
+# Pattern to fix dropcap letters separated from their word
+# Matches: single capital letter, blank line, then lowercase continuation
+# Example: "K\n\nwan's team" -> "Kwan's team"
+DROPCAP_PATTERN = re.compile(r"^([A-Z])\n\n([a-z])", re.MULTILINE)
 
 
 class DefuddleError(Exception):
@@ -45,6 +52,27 @@ def get_script_path() -> Path:
     """Get the path to the defuddle extraction script."""
     package_root = Path(__file__).parent.parent.parent
     return package_root / "scripts" / "defuddle-extract.js"
+
+
+def cleanup_content(content: str) -> str:
+    """Clean up extracted markdown content.
+
+    Fixes common extraction artifacts like:
+    - Dropcap letters separated from their word (e.g., "K\\n\\nwan's" -> "Kwan's")
+
+    Args:
+        content: Raw markdown content from defuddle
+
+    Returns:
+        Cleaned markdown content
+    """
+    if not content:
+        return content
+
+    # Fix dropcap letters separated by blank line from rest of word
+    content = DROPCAP_PATTERN.sub(r"\1\2", content)
+
+    return content
 
 
 def extract_page(url: str, timeout: int = 60) -> dict[str, Any]:
@@ -105,6 +133,10 @@ def extract_page(url: str, timeout: int = 60) -> dict[str, Any]:
         if not data.get("title"):
             parsed = urlparse(url)
             data["title"] = parsed.netloc or "Untitled"
+
+        # Clean up content artifacts
+        if data.get("content"):
+            data["content"] = cleanup_content(data["content"])
 
         return data
 
