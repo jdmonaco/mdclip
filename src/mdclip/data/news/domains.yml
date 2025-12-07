@@ -1,0 +1,60 @@
+# US-focused News Sources
+
+news_domains:
+  # Major US Newspapers
+  - nytimes.com
+  - washingtonpost.com
+  - wsj.com
+  - usatoday.com
+  - latimes.com
+  - chicagotribune.com
+  - nypost.com
+  - bostonglobe.com
+  - sfchronicle.com
+  - dallasnews.com
+  - denverpost.com
+  - seattletimes.com
+  - miamiherald.com
+  - startribune.com
+  - phillynews.com
+
+  # TV Networks
+  - cnn.com
+  - foxnews.com
+  - nbcnews.com
+  - cbsnews.com
+  - abcnews.go.com
+  - msnbc.com
+
+  # Wire Services
+  - apnews.com
+  - reuters.com
+  - upi.com
+
+  # Public/Non-profit
+  - npr.org
+  - pbs.org
+
+  # Digital-native News
+  - politico.com
+  - axios.com
+  - thehill.com
+  - huffpost.com
+  - buzzfeednews.com
+  - vox.com
+  - semafor.com
+
+  # Business News
+  - bloomberg.com
+  - cnbc.com
+  - marketwatch.com
+  - fortune.com
+  - businessinsider.com
+
+  # Major International
+  - bbc.com
+  - bbc.co.uk
+  - theguardian.com
+  - aljazeera.com
+  - france24.com
+  - dw.com

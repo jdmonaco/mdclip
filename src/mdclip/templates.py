@@ -9,6 +9,7 @@ from .builtin import is_builtin_trigger, matches_builtin
 
 # Ensure built-in filters are registered
 import mdclip.academic  # noqa: F401
+import mdclip.news  # noqa: F401
 
 
 # Regex metacharacters that indicate a pattern is a regex

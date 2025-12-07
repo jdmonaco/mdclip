@@ -1,0 +1,41 @@
+# Minimal path patterns for news articles
+
+url_path_patterns:
+  # Article indicators
+  - /article/
+  - /articles/
+  - /story/
+  - /news/
+  - /politics/
+  - /business/
+  - /world/
+  - /us/
+  - /opinion/
+  - /breaking/
+  - /live/
+
+  # Date-based paths (common in news URLs)
+  - /2023/
+  - /2024/
+  - /2025/
+  - /2026/
+
+query_parameters:
+  - id=
+  - article=
+  - story=
+
+regex_patterns:
+  # Date pattern in URL: /2024/12/07/
+  date_path_pattern: "/20\\d{2}/\\d{2}/\\d{2}/"
+
+combined_patterns:
+  # These match domain + minimal path
+  - pattern: "(nytimes|washingtonpost|wsj)\\.com/\\d{4}/"
+    confidence: high
+  - pattern: "(cnn|foxnews|nbcnews)\\.com/(politics|business|us|world)/"
+    confidence: high
+  - pattern: "apnews\\.com/article/"
+    confidence: high
+  - pattern: "reuters\\.com/(world|business|markets)/"
+    confidence: high
