@@ -200,11 +200,16 @@ templates:
 
 ### Built-in Triggers
 
-mdclip includes built-in triggers for common content types that use smart URL matching.
+mdclip includes built-in triggers for common content types using smart URL matching with domain and path scoring.
+
+| Trigger | Description | Domains |
+|---------|-------------|---------|
+| `@academic` | Scientific journals and publishers | 113 |
+| `@news` | US-focused news sources | 50 |
 
 #### `@academic`
 
-Matches academic and scientific journal article URLs using 113 publisher domains and 190+ path patterns. Uses a scoring system to ensure high precision:
+Matches academic and scientific journal article URLs from Nature, arXiv, PubMed, IEEE, ACM, Springer, Elsevier, and more. Requires domain + article path for high precision.
 
 ```yaml
 templates:
@@ -212,13 +217,21 @@ templates:
     triggers:
       - "@academic"
     folder: Reference/Papers
-    tags:
-      - paper
-      - research
-    filename: "{{title}}"
+    tags: [paper, research]
 ```
 
-Matches URLs from Nature, arXiv, PubMed, IEEE, ACM, Springer, Elsevier, and many more academic publishers when they contain article-indicating paths (e.g., `/articles/`, `/doi/`, `/abs/`).
+#### `@news`
+
+Matches news article URLs from major US newspapers, TV networks, wire services, and digital-native outlets. Trusts domain alone (lower threshold) for known news sources.
+
+```yaml
+templates:
+  - name: news
+    triggers:
+      - "@news"
+    folder: Reference/News
+    tags: [news, current-events]
+```
 
 ## Output
 
