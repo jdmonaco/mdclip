@@ -6,9 +6,6 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 # Set the name of your browser
 BROWSER="Microsoft Edge"
 
-# Set your Obsidian vault name
-VAULT_NAME="Forge"
-
 # Detect frontmost browser and get URL
 get_browser_url() {
     case "$BROWSER" in
@@ -60,22 +57,9 @@ OUTPUT=$($HOME/.local/bin/mdclip "$URL" 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
-    # Extract relative path from "Saved: path/to/file.md"
-    RELATIVE_PATH=$(echo "$OUTPUT" | grep -oE 'Saved: .+\.md$' | sed 's/Saved: //')
-    
-    if [ -n "$RELATIVE_PATH" ]; then
-        # URL-encode the path (preserve slashes)
-        ENCODED_PATH=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$RELATIVE_PATH''', safe='/'))")
-        
-        # Open in Obsidian
-        open "obsidian://open?vault=$VAULT_NAME&file=$ENCODED_PATH"
-        
-        # Extract just filename for notification
-        FILENAME=$(basename "$RELATIVE_PATH")
-        osascript -e "display notification \"$FILENAME\" with title \"mdclip ✓\""
-    else
-        osascript -e "display notification \"Clipped (path not found)\" with title \"mdclip ✓\""
-    fi
+    # Extract just filename from "Saved: path/to/file.md"
+    FILENAME=$(echo "$OUTPUT" | grep -oE 'Saved: .+\.md$' | sed 's/Saved: //' | xargs basename 2>/dev/null)
+    osascript -e "display notification \"${FILENAME:-Clipped}\" with title \"mdclip ✓\""
 else
     osascript -e "display notification \"$OUTPUT\" with title \"mdclip ✗\""
 fi

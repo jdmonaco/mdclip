@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import NamedTuple
+from urllib.parse import quote
 
 # Pattern to extract source URL from YAML frontmatter
 FRONTMATTER_SOURCE_PATTERN = re.compile(
@@ -165,4 +166,60 @@ def format_markdown(path: Path) -> bool:
         )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+        return False
+
+
+def get_vault_name(vault_path: Path) -> str:
+    """Extract vault name from vault path (last component)."""
+    return vault_path.resolve().name
+
+
+def open_note(filepath: Path, vault_path: Path) -> bool:
+    """Open a note file - in Obsidian if inside vault, otherwise in pager.
+
+    Args:
+        filepath: Absolute path to the markdown file
+        vault_path: Path to the Obsidian vault
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Check if file is inside vault
+        rel_path = filepath.relative_to(vault_path)
+        return _open_in_obsidian(rel_path, vault_path)
+    except ValueError:
+        # File is outside vault - open in pager
+        return _open_in_pager(filepath)
+
+
+def _open_in_obsidian(rel_path: Path, vault_path: Path) -> bool:
+    """Open file in Obsidian using obsidian:// URL scheme."""
+    try:
+        encoded_path = quote(str(rel_path), safe="/")
+        vault_name = get_vault_name(vault_path)
+        obsidian_url = f"obsidian://open?vault={quote(vault_name)}&file={encoded_path}"
+        subprocess.run(["open", obsidian_url], check=True)
+        # Bring Obsidian to foreground via System Events
+        subprocess.run(
+            [
+                "osascript", "-e",
+                'tell application "System Events" to set frontmost of process "Obsidian" to true',
+            ],
+            check=False,
+        )
+        return True
+    except subprocess.SubprocessError:
+        return False
+
+
+def _open_in_pager(filepath: Path) -> bool:
+    """Open file in glow (if available) or less."""
+    try:
+        if shutil.which("glow"):
+            subprocess.run(["glow", "-p", str(filepath)], check=True)
+        else:
+            subprocess.run(["less", str(filepath)], check=True)
+        return True
+    except subprocess.SubprocessError:
         return False

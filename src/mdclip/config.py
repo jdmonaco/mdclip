@@ -14,6 +14,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "default_folder": "Inbox/Clips",
     "auto_format": False,
     "skip_existing": False,
+    "open_in_obsidian": True,
     "default_properties": ["title", "source", "author", "created", "published", "description"],
     "templates": [
         {
@@ -50,6 +51,11 @@ auto_format: false
 # When false (default), appends (1), (2), etc. to filename
 # Can also be enabled per-run with --skip-existing flag
 skip_existing: false
+
+# Open clipped note after single-URL processing
+# Inside vault: opens in Obsidian; outside vault: opens in glow/less
+# Disable with --no-open flag or set to false here
+open_in_obsidian: true
 
 # Default frontmatter properties (always included when available)
 # Supported: title, source, author, created, published, description, tags

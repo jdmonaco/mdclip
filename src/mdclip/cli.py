@@ -37,6 +37,7 @@ from .output import (
     check_existing_file,
     format_markdown,
     get_unique_filepath,
+    open_note,
     resolve_output_path,
     write_note,
 )
@@ -119,6 +120,12 @@ Examples:
         "--no-format",
         action="store_true",
         help="Skip mdformat post-processing",
+    )
+
+    parser.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Don't open note after clipping",
     )
 
     # Configuration
@@ -416,10 +423,14 @@ def main(args: list[str] | None = None) -> int:
 
     # Process each URL
     processed_count = 0
+    last_filepath: Path | None = None
     for url in urls:
         try:
             result = process_url(url, config, parsed_args)
-            if result or parsed_args.dry_run:
+            if result:
+                last_filepath = result
+                processed_count += 1
+            elif parsed_args.dry_run:
                 processed_count += 1
         except (NodeNotInstalledError, DefuddleNotInstalledError) as e:
             error(str(e))
@@ -432,6 +443,13 @@ def main(args: list[str] | None = None) -> int:
             error(f"Processing {url}: {e}")
             if parsed_args.verbose:
                 traceback.print_exc()
+
+    # Open note after single-URL success
+    if len(urls) == 1 and processed_count == 1 and last_filepath:
+        should_open = config.get("open_in_obsidian", True) and not parsed_args.no_open
+        if should_open:
+            vault = Path(config["vault"]).expanduser()
+            open_note(last_filepath, vault)
 
     # Summary
     if len(urls) > 1:
