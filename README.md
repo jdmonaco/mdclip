@@ -8,7 +8,9 @@ A command-line tool that clips web pages to Markdown files with YAML frontmatter
 - **YAML frontmatter**: Automatic metadata including title, author, source URL, creation date, description, and tags
 - **Multiple input formats**: Single URLs, bookmark exports, markdown files with links, or text files with URL lists
 - **Clipboard support**: Automatically reads URLs from clipboard when no input is provided (macOS)
+- **Obsidian integration**: Auto-opens clipped notes in Obsidian after single-URL clipping
 - **Bookmark section selection**: For large bookmark files, interactively select which folder to process
+- **Skip existing**: Option to skip URLs that already have a clipped file with the same source
 - **Optional formatting**: Post-process output with mdformat for consistent styling
 - **Batch processing**: Clip multiple URLs in one command with confirmation for large batches
 - **Rich console output**: Colored status messages and progress spinners
@@ -62,31 +64,33 @@ vim ~/.mdclip.yml
 ## Usage
 
 ```
-usage: mdclip [-h] [-o PATH] [-v PATH] [-t NAME] [--tags TAG [TAG ...]]
-              [--dry-run] [--config PATH] [--init-config] [--list-templates]
-              [--verbose] [--no-format] [-y] [--all-sections] [--version]
+usage: mdclip [-h] [-o FOLDER] [-t NAME] [--tags TAG [TAG ...]]
+              [--skip-existing] [-n] [-y] [--all-sections] [--no-format]
+              [--no-open] [--vault PATH] [--config FILE] [--list-templates]
+              [--verbose] [--version]
               [INPUT ...]
 
-Clip web pages to Markdown with YAML frontmatter
+Clip web pages to Markdown with YAML frontmatter.
 
 positional arguments:
-  INPUT                 URL(s), path to bookmarks HTML, markdown file, or text
-                        file with URLs. If omitted, reads from clipboard.
+  INPUT                 URL, bookmarks HTML file, or text file with URLs
+                        (reads clipboard if omitted)
 
 options:
   -h, --help            show this help message and exit
-  -o, --output PATH     Override output folder (relative to vault or absolute)
-  -v, --vault PATH      Override vault path
-  -t, --template NAME   Force specific template (bypass pattern matching)
-  --tags TAG [TAG ...]  Additional tags to append
-  --dry-run             Show what would be done without writing files
-  --config PATH         Use alternate config file
-  --init-config         Initialize default config file and exit
-  --list-templates      List configured templates and exit
-  --verbose             Verbose output
-  --no-format           Skip mdformat post-processing
-  -y, --yes             Skip confirmation prompt for many URLs
+  -o, --output FOLDER   Output folder (relative to vault or absolute path)
+  -t, --template NAME   Use named template (bypasses URL pattern matching)
+  --tags TAG [TAG ...]  Additional tags to include in frontmatter
+  --skip-existing       Skip URLs that already have a clipped file
+  -n, --dry-run         Show what would be done without writing files
+  -y, --yes             Skip confirmation prompts
   --all-sections        Process all bookmark sections without prompting
+  --no-format           Skip mdformat post-processing
+  --no-open             Don't open note after clipping
+  --vault PATH          Override vault path from config
+  --config FILE         Use alternate config file
+  --list-templates      List configured templates and exit
+  --verbose             Show detailed output
   --version             show program's version number and exit
 ```
 
@@ -128,11 +132,17 @@ mdclip urls.txt
 
 # Force a specific template
 mdclip -t documentation "https://example.com/docs"
+
+# Skip URLs that already have a clipped file
+mdclip --skip-existing urls.txt
+
+# Clip without opening in Obsidian
+mdclip --no-open "https://example.com"
 ```
 
 ## Configuration
 
-Configuration is stored in `~/.mdclip.yml`. The config file is automatically created with sensible defaults on first run. You can also run `mdclip --init-config` to explicitly create it.
+Configuration is stored in `~/.mdclip.yml`. The config file is automatically created with sensible defaults on first run.
 
 ### Key Settings
 
@@ -148,6 +158,13 @@ default_folder: Inbox/Clips
 
 # Enable mdformat post-processing
 auto_format: false
+
+# Skip URLs if a file already exists with the same source URL
+skip_existing: false
+
+# Open clipped note after single-URL processing
+# Inside vault: opens in Obsidian; outside vault: opens in glow/less
+open_in_obsidian: true
 ```
 
 ### Templates
