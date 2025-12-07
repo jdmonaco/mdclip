@@ -22,8 +22,8 @@ BROKEN_LINK_PATTERN = re.compile(
     r"\\?\[\s*\n+(?:#{1,6}\s+)?([^\n]+?)\s*\n+\\?\]\(([^)]+)\)"
 )
 
-# Pattern to match markdown links: [text](url)
-MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+# Pattern to match markdown links and images: [text](url) or ![alt](url)
+MARKDOWN_LINK_PATTERN = re.compile(r"(!?)\[([^\]]*)\]\(([^)]+)\)")
 
 
 class DefuddleError(Exception):
@@ -108,8 +108,9 @@ def _resolve_relative_links(content: str, source_url: str) -> str:
     """
 
     def replace_link(match: re.Match[str]) -> str:
-        text = match.group(1)
-        url = match.group(2)
+        prefix = match.group(1)  # "!" for images, "" for links
+        text = match.group(2)
+        url = match.group(3)
 
         # Skip if already absolute (http, https, mailto, etc.)
         if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", url):
@@ -119,9 +120,9 @@ def _resolve_relative_links(content: str, source_url: str) -> str:
         if url.startswith("#"):
             return match.group(0)
 
-        # Resolve relative URL against source
+        # Resolve relative URL against source (handles //, /, and relative paths)
         absolute_url = urljoin(source_url, url)
-        return f"[{text}]({absolute_url})"
+        return f"{prefix}[{text}]({absolute_url})"
 
     return MARKDOWN_LINK_PATTERN.sub(replace_link, content)
 
