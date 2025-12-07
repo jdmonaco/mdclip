@@ -5,6 +5,11 @@ import unicodedata
 from dataclasses import dataclass, field
 from typing import Any
 
+from .builtin import is_builtin_trigger, matches_builtin
+
+# Ensure built-in filters are registered
+import mdclip.academic  # noqa: F401
+
 
 # Regex metacharacters that indicate a pattern is a regex
 REGEX_METACHARACTERS = r"^$.*+?{}[]()|\\"
@@ -55,11 +60,15 @@ def matches_pattern(url: str, pattern: str) -> bool:
 
     Args:
         url: The URL to check
-        pattern: Either a regex pattern or a substring to match
+        pattern: Either a regex pattern, substring, or built-in trigger (@name)
 
     Returns:
         True if the URL matches the pattern
     """
+    # Check for built-in triggers (@academic, etc.)
+    if is_builtin_trigger(pattern):
+        return matches_builtin(url, pattern)
+
     if is_regex_pattern(pattern):
         try:
             return bool(re.search(pattern, url, re.IGNORECASE))

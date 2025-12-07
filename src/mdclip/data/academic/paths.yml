@@ -1,0 +1,247 @@
+# High-Precision URL Path Components for Academic Content
+
+url_path_patterns:
+  # DOI and Article Identifiers
+  - /doi/
+  - /doi/abs/
+  - /doi/full/
+  - /doi/pdf/
+  - /article/
+  - /articles/
+  - /paper/
+  - /papers/
+  - /publication/
+  - /publications/
+  - /content/
+  - /document/
+  - /record/
+  - /pii/  # Publisher Item Identifier (Elsevier)
+  
+  # Journal-Specific Paths
+  - /journal/
+  - /journals/
+  - /journal-article/
+  - /toc/  # Table of Contents
+  - /issue/
+  - /volume/
+  - /current/
+  - /early/
+  - /eprint/
+  - /epdf/
+  
+  # Abstract and Full Text
+  - /abstract/
+  - /abs/
+  - /full/
+  - /fulltext/
+  - /full-text/
+  - /pdf/
+  - /html/
+  - /epdf/
+  - /pdfdirect/
+  - /pdfaccess/
+  
+  # Preprint Servers
+  - /abs/  # arXiv
+  - /pdf/  # arXiv
+  - /content/  # bioRxiv/medRxiv
+  - /early/  # bioRxiv/medRxiv
+  
+  # Publisher-Specific Paths
+  ## Nature Publishing Group
+  - /nature/journal/
+  - /articles/
+  - /nature-
+  - /nmat/
+  - /nphys/
+  - /nchem/
+  
+  ## Science/AAAS
+  - /content/
+  - /content/early/
+  - /lookup/doi/
+  
+  ## Wiley
+  - /doi/abs/
+  - /doi/full/
+  - /doi/epdf/
+  - /doi/pdf/
+  - /journal/
+  
+  ## Elsevier/ScienceDirect
+  - /science/article/
+  - /science/article/pii/
+  - /science/article/abs/
+  
+  ## Springer
+  - /article/
+  - /chapter/
+  - /book/
+  - /referenceworkentry/
+  - /protocol/
+  
+  ## Taylor & Francis
+  - /doi/abs/
+  - /doi/full/
+  - /doi/pdf/
+  
+  ## IEEE
+  - /document/
+  - /abstract/document/
+  - /stamp/stamp.jsp
+  - /iel7/
+  - /arnumber/
+  
+  ## ACM
+  - /citation.cfm
+  - /doi/
+  - /doi/abs/
+  - /doi/pdf/
+  
+  ## PLOS
+  - /article/
+  - /plosone/article
+  - /plosbiology/article
+  - /ploscompbiol/article
+  
+  ## Frontiers
+  - /articles/
+  - /article/
+  - /journals/
+  
+  ## BMC/BioMed Central
+  - /articles/
+  - /content/
+  - /content/pdf/
+  
+  ## MDPI
+  - /article/
+  - /-/article/
+  - /pdf/
+  
+  ## Oxford Academic
+  - /article/
+  - /article-abstract/
+  - /article-pdf/
+  - /advance-article/
+  - /advance-article-abstract/
+  
+  ## Cambridge
+  - /article/
+  - /core/journals/
+  - /core/product/
+  
+  ## SAGE
+  - /doi/abs/
+  - /doi/full/
+  - /doi/pdf/
+  
+  ## PubMed/NCBI
+  - /pubmed/
+  - /pmc/articles/
+  - /pmc/articles/PMC
+  - /books/NBK
+  
+  ## arXiv
+  - /abs/
+  - /pdf/
+  - /ps/
+  - /format/
+  
+  ## SSRN
+  - /abstract=
+  - /sol3/papers.cfm
+  
+  # Conference Proceedings
+  - /proceedings/
+  - /conference/
+  - /symposium/
+  - /workshop/
+  
+  # Review and Meta-Analysis
+  - /review/
+  - /reviews/
+  - /systematic-review/
+  - /meta-analysis/
+  
+  # Supplementary Materials
+  - /supplemental/
+  - /supplementary/
+  - /suppl/
+  - /suppinfo/
+  - /data/
+  
+  # Citation and Reference Formats
+  - /citation/
+  - /citedby/
+  - /references/
+  - /ref/
+  
+  # Special Content Types
+  - /research-article/
+  - /research/
+  - /original-research/
+  - /brief-report/
+  - /case-report/
+  - /clinical-trial/
+  - /correspondence/
+  - /letter/
+  - /commentary/
+  - /editorial/
+  - /perspective/
+  - /opinion/
+  - /short-communication/
+
+# File Extensions (for direct file matching)
+file_extensions:
+  - .pdf
+  - .html
+  - .htm
+  - .xml
+  - .epub
+
+# Query Parameters (common in academic URLs)
+query_parameters:
+  - doi=
+  - articleId=
+  - article_id=
+  - id=
+  - pmid=  # PubMed ID
+  - pmc=   # PubMed Central
+  - issn=
+  - isbn=
+  - volume=
+  - issue=
+  - page=
+  - year=
+
+# Regex Patterns for Matching (examples)
+regex_patterns:
+  doi_pattern: "10\\.\\d{4,}/[-._;()/:A-Za-z0-9]+"
+  pmid_pattern: "/pubmed/\\d+/?$"
+  pmc_pattern: "/pmc/articles/PMC\\d+/?$"
+  arxiv_pattern: "/abs/\\d{4}\\.\\d{4,5}(v\\d+)?$"
+  article_id_pattern: "/article/[A-Za-z0-9-_]+/?$"
+  
+# Combined Pattern Examples (domain + path)
+combined_patterns:
+  - pattern: "nature\\.com/articles/"
+    confidence: high
+  - pattern: "sciencedirect\\.com/science/article/pii/"
+    confidence: high
+  - pattern: "doi\\.org/10\\."
+    confidence: high
+  - pattern: "arxiv\\.org/(abs|pdf)/"
+    confidence: high
+  - pattern: "ncbi\\.nlm\\.nih\\.gov/(pubmed|pmc)/"
+    confidence: high
+  - pattern: "ieeexplore\\.ieee\\.org/document/"
+    confidence: high
+  - pattern: "dl\\.acm\\.org/doi/"
+    confidence: high
+  - pattern: "journals\\.[a-z]+\\.(com|org)/doi/"
+    confidence: high
+  - pattern: "\\.(com|org)/article(s)?/"
+    confidence: medium
+  - pattern: "/doi/(abs|full|pdf)/"
+    confidence: high

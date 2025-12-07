@@ -1,0 +1,118 @@
+# Major Academic Scientific Publishers and Open Access Platforms
+
+academic_publishers:
+  # Major Commercial Publishers
+  - nature.com
+  - springer.com
+  - springerlink.com
+  - sciencedirect.com
+  - elsevier.com
+  - wiley.com
+  - onlinelibrary.wiley.com
+  - tandfonline.com
+  - taylorfrancis.com
+  - sagepub.com
+  - journals.sagepub.com
+  - oup.com
+  - academic.oup.com
+  - cambridge.org
+  - journals.cambridge.org
+  - karger.com
+  - thieme-connect.com
+  - worldscientific.com
+  - iospress.com
+  - emerald.com
+  - emeraldinsight.com
+  
+  # Society Publishers
+  - science.org  # AAAS (Science magazine)
+  - sciencemag.org
+  - aaas.org
+  - aps.org  # American Physical Society
+  - journals.aps.org
+  - acs.org  # American Chemical Society
+  - pubs.acs.org
+  - asm.org  # American Society for Microbiology
+  - journals.asm.org
+  - agu.org  # American Geophysical Union
+  - ascelibrary.org  # American Society of Civil Engineers
+  - ieee.org
+  - ieeexplore.ieee.org
+  - acm.org
+  - dl.acm.org
+  - ams.org  # American Mathematical Society
+  - rsna.org  # Radiological Society of North America
+  - pubs.rsna.org
+  - psycnet.apa.org  # American Psychological Association
+  
+  # Open Access Publishers
+  - plos.org
+  - plosone.org
+  - journals.plos.org
+  - frontiersin.org
+  - hindawi.com
+  - mdpi.com
+  - biomedcentral.com
+  - bmj.com
+  - peerj.com
+  - f1000research.com
+  - elifesciences.org
+  - pensoft.net
+  - copernicus.org
+  
+  # Open Access Repositories and Platforms
+  - arxiv.org
+  - biorxiv.org
+  - medrxiv.org
+  - psyarxiv.com
+  - ssrn.com
+  - zenodo.org
+  - figshare.com
+  - osf.io  # Open Science Framework
+  - pubmed.ncbi.nlm.nih.gov
+  - ncbi.nlm.nih.gov
+  - europepmc.org
+  - doaj.org  # Directory of Open Access Journals
+  - openreview.net
+  - researchsquare.com
+  
+  # Discipline-Specific Repositories and Databases
+  - philpapers.org  # Philosophy
+  
+  # Institutional and Academic Presses
+  - mitpressjournals.org
+  - press.uchicago.edu
+  - journals.uchicago.edu
+  - ucpress.edu
+  - dukeupress.edu
+  - universitypressscholarship.com
+  
+  # Discipline-Specific Publishers
+  - cell.com  # Cell Press (Life Sciences)
+  - thelancet.com  # The Lancet (Medicine)
+  - nejm.org  # New England Journal of Medicine
+  - jamanetwork.com  # JAMA Network
+  - bmj.com  # British Medical Journal
+  - cochranelibrary.com
+  - annals.org  # Annals of Internal Medicine
+  - jneurosci.org  # Journal of Neuroscience
+  - pnas.org  # Proceedings of the National Academy of Sciences
+  - royalsocietypublishing.org
+  - annualreviews.org  # Annual Reviews
+  
+  # Multi-Publisher Platforms
+  - jstor.org
+  - projectmuse.org
+  - proquest.com
+  - ebsco.com
+  
+  # Additional Major Publishers
+  - degruyter.com
+  - brill.com
+  - nowpublishers.com
+  - liebertpub.com
+  - futuremedicine.com
+  - journals.lww.com  # Wolters Kluwer
+  - ovid.com
+  - magonlinelibrary.com
+  - scitation.org  # AIP Publishing
