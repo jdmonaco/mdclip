@@ -22,6 +22,14 @@ BROKEN_LINK_PATTERN = re.compile(
     r"\\?\[\s*\n+(?:#{1,6}\s+)?([^\n]+?)\s*\n+\\?\]\(([^)]+)\)"
 )
 
+# Pattern for complex broken links containing images or multi-paragraph content
+# These are links wrapping complex content like images, captions, credits
+# Example: \[\nImage\n![alt](url)\nCaption\n\](link) -> Image\n![alt](url)\nCaption
+# We keep the inner content and discard the outer link wrapper
+COMPLEX_BROKEN_LINK_PATTERN = re.compile(
+    r"\\?\[\s*\n+([\s\S]*?!\[[^\]]*\]\([^)]+\)[\s\S]*?)\n*\\?\]\([^)]+\)"
+)
+
 # Pattern to match markdown links and images: [text](url) or ![alt](url)
 MARKDOWN_LINK_PATTERN = re.compile(r"(!?)\[([^\]]*)\]\(([^)]+)\)")
 
@@ -70,7 +78,8 @@ def cleanup_content(content: str, source_url: str | None = None) -> str:
 
     Fixes common extraction artifacts like:
     - Dropcap letters separated from their word (e.g., "K\\n\\nwan's" -> "Kwan's")
-    - Markdown links broken across multiple lines (e.g., "\\[\\n## Title\\n\\](url)")
+    - Complex broken links wrapping images/captions (unwrap, keep content)
+    - Simple broken links across multiple lines (e.g., "\\[\\n## Title\\n\\](url)")
     - Relative URLs converted to absolute URLs based on source
 
     Args:
@@ -86,7 +95,11 @@ def cleanup_content(content: str, source_url: str | None = None) -> str:
     # Fix dropcap letters separated by blank line from rest of word
     content = DROPCAP_PATTERN.sub(r"\1\2", content)
 
-    # Fix markdown links broken across multiple lines
+    # Fix complex broken links (containing images) - unwrap and keep inner content
+    # Must run before simple broken link fix
+    content = COMPLEX_BROKEN_LINK_PATTERN.sub(r"\1", content)
+
+    # Fix simple markdown links broken across multiple lines
     content = BROKEN_LINK_PATTERN.sub(r"[\1](\2)", content)
 
     # Convert relative URLs to absolute URLs
@@ -176,8 +189,20 @@ def extract_page(url: str, timeout: int = 60) -> dict[str, Any]:
                 raise DefuddleError(result.stderr or "Unknown error")
 
         # Parse the JSON output
+        # defuddle may output debug messages before JSON, so find the JSON line
+        stdout = result.stdout.strip()
+        json_str = None
+        for line in stdout.split("\n"):
+            line = line.strip()
+            if line.startswith("{"):
+                json_str = line
+                break
+
+        if not json_str:
+            raise DefuddleError(f"No JSON found in output: {stdout[:200]}")
+
         try:
-            data = json.loads(result.stdout)
+            data = json.loads(json_str)
         except json.JSONDecodeError as e:
             raise DefuddleError(f"Failed to parse output: {e}") from e
 
