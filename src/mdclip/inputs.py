@@ -342,6 +342,9 @@ def flatten_sections(
     └── for last item in a group
     │   for continuation lines
 
+    For sections with both direct URLs and subfolders, adds a "." entry
+    to allow selecting only the direct URLs without subfolder contents.
+
     Args:
         sections: List of BookmarkSection objects
         _depth: Current depth (internal use)
@@ -376,6 +379,26 @@ def flatten_sections(
 
         if section.total_urls > 0:
             result.append((display_name, section))
+
+        # If section has both direct URLs and children, add a "<bookmarks>" entry
+        # to allow selecting only the direct URLs
+        if section.urls and section.children:
+            # Create synthetic section with only direct URLs
+            direct_only = BookmarkSection(
+                title="<bookmarks>",
+                depth=section.depth + 1,
+                urls=list(section.urls),
+                children=[],
+            )
+            # Build prefix for the "<bookmarks>" entry (it's the first child)
+            child_prefix = ""
+            for ancestor_is_last in _is_last_stack[1:]:
+                child_prefix += "    " if ancestor_is_last else "│   "
+            if _depth > 0:
+                child_prefix += "    " if is_last else "│   "
+            child_prefix += "├── "  # Never last since children follow
+            direct_display = f"{child_prefix}<bookmarks> ({len(section.urls)})"
+            result.append((direct_display, direct_only))
 
         # Recurse into children
         if section.children:
