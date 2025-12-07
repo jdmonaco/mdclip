@@ -191,7 +191,34 @@ templates:
     filename: "{{title}}"
 ```
 
+**Trigger types:**
+- Substring match: `"https://github.com/"`
+- Regex pattern: `"^https://[\\w-]+\\.github\\.io/"`
+- Built-in filter: `"@academic"` (see below)
+
 **Filename variables**: `{{title}}`, `{{date}}`, `{{slug}}`, `{{domain}}`
+
+### Built-in Triggers
+
+mdclip includes built-in triggers for common content types that use smart URL matching.
+
+#### `@academic`
+
+Matches academic and scientific journal article URLs using 113 publisher domains and 190+ path patterns. Uses a scoring system to ensure high precision:
+
+```yaml
+templates:
+  - name: papers
+    triggers:
+      - "@academic"
+    folder: Reference/Papers
+    tags:
+      - paper
+      - research
+    filename: "{{title}}"
+```
+
+Matches URLs from Nature, arXiv, PubMed, IEEE, ACM, Springer, Elsevier, and many more academic publishers when they contain article-indicating paths (e.g., `/articles/`, `/doi/`, `/abs/`).
 
 ## Output
 
