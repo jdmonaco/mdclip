@@ -25,9 +25,8 @@ The tool processes URLs through a template system where URL patterns determine:
   - Converts HTML to clean Markdown
 - **Dependencies**:
   - `pyyaml` - Configuration and frontmatter
-  - `beautifulsoup4` - Bookmarks HTML parsing
   - `rich` - Colored console output and progress spinners
-  - Node.js runtime with defuddle (via npm install)
+  - Node.js runtime with defuddle, jsdom (via npm install)
 
 ## Architecture
 
@@ -45,7 +44,8 @@ mdclip/
 │   ├── selector.py         # Interactive section selection (gum/fallback)
 │   └── templates.py        # Template matching logic
 ├── scripts/
-│   └── defuddle-extract.js # Node.js extraction script
+│   ├── defuddle-extract.js  # Node.js extraction script
+│   └── browser-clip-script.sh # macOS browser automation
 ├── tests/
 ├── package.json            # Node.js dependencies (defuddle, jsdom)
 ├── pyproject.toml
@@ -67,7 +67,9 @@ vault: ~/Documents/Obsidian/Notes
 date_format: "%Y-%m-%d"
 filename_date_format: "%Y-%m-%d"
 default_folder: Inbox/Clips
-auto_format: false  # Enable mdformat post-processing
+auto_format: false       # Enable mdformat post-processing
+skip_existing: false     # Skip URLs with existing clipped files
+open_in_obsidian: true   # Auto-open notes after clipping
 
 # Default frontmatter properties
 default_properties:
@@ -106,18 +108,19 @@ Arguments:
                             If omitted, reads URLs from clipboard.
 
 Options:
-  -o, --output PATH         Override output folder (relative to vault or absolute)
-  -v, --vault PATH          Override vault path
-  -t, --template NAME       Force specific template (bypass pattern matching)
-  --tags TAG [TAG...]       Additional tags to append
-  --dry-run                 Show what would be done without writing files
-  --config PATH             Use alternate config file
-  --init-config             Initialize default config file and exit
-  --list-templates          List configured templates and exit
-  --verbose                 Verbose output
-  --no-format               Skip mdformat post-processing
-  -y, --yes                 Skip confirmation prompt for many URLs
+  -o, --output FOLDER       Output folder (relative to vault or absolute)
+  -t, --template NAME       Use named template (bypass pattern matching)
+  --tags TAG [TAG...]       Additional tags to include in frontmatter
+  --skip-existing           Skip URLs that already have a clipped file
+  -n, --dry-run             Show what would be done without writing files
+  -y, --yes                 Skip confirmation prompts
   --all-sections            Process all bookmark sections without prompting
+  --no-format               Skip mdformat post-processing
+  --no-open                 Don't open note after clipping
+  --vault PATH              Override vault path from config
+  --config FILE             Use alternate config file
+  --list-templates          List configured templates and exit
+  --verbose                 Show detailed output
   --version                 Show version
   -h, --help                Show help
 ```
@@ -145,6 +148,18 @@ Options:
 ### Batch Confirmation
 - Prompts before processing >10 URLs
 - `-y/--yes` skips the confirmation prompt
+
+### Skip Existing
+- `--skip-existing` flag or `skip_existing: true` in config
+- Checks if file exists with same source URL in frontmatter
+- Skips re-clipping if already present; otherwise appends `(1)`, `(2)`, etc.
+
+### Obsidian Integration
+- After clipping a single URL, auto-opens the note in Obsidian
+- Uses `obsidian://open` URL scheme with vault name and file path
+- Brings Obsidian to foreground via System Events
+- For files outside vault, opens in `glow -p` or `less` as fallback
+- `--no-open` flag or `open_in_obsidian: false` disables this
 
 ### Template Matching
 1. Iterate templates in order
@@ -237,8 +252,11 @@ uv run ruff format --check src/mdclip/
 # Clip from clipboard (copy URL first)
 mdclip
 
-# Single URL
+# Single URL (auto-opens in Obsidian)
 mdclip "https://github.com/kepano/defuddle"
+
+# Clip without opening in Obsidian
+mdclip --no-open "https://example.com"
 
 # Multiple URLs
 mdclip "https://github.com/..." "https://docs.python.org/..."
@@ -255,6 +273,9 @@ mdclip links.md
 # From URL list file
 mdclip urls.txt
 
+# Skip URLs that already have clipped files
+mdclip --skip-existing urls.txt
+
 # Override output location
 mdclip -o "Projects/Research" "https://example.com/article"
 
@@ -262,7 +283,7 @@ mdclip -o "Projects/Research" "https://example.com/article"
 mdclip --tags research python "https://docs.python.org/3/library/re.html"
 
 # Dry run for testing
-mdclip --dry-run bookmarks.html
+mdclip -n bookmarks.html
 
 # Skip confirmation for large batches
 mdclip -y bookmarks.html
