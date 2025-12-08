@@ -70,88 +70,76 @@ default_properties:
 
 # Templates define how URLs are processed based on pattern matching
 # Templates are checked in order; first match wins
+# Built-in triggers (@name) provide smart domain+path matching
 # The 'default' template is used when no other template matches
 templates:
-  # GitHub repositories and pages
-  - name: github
+  # Scientific journals and publishers (113 domains)
+  - name: papers
     triggers:
-      - "https://github.com/"
-      - "^https://[\\\\w-]+\\\\.github\\\\.io/"
-    folder: Reference/Software
-    tags:
-      - webclip
-      - software
-      - github
-    filename: "{{title}}"
-    properties:
-      type: repository
+      - "@academic"
+    folder: Reference/Papers
+    tags: [paper, research]
 
-  # Stack Overflow questions
-  - name: stackoverflow
-    triggers:
-      - "stackoverflow.com/questions"
-      - "stackexchange.com/questions"
-    folder: Reference/Code
-    tags:
-      - webclip
-      - code
-      - stackoverflow
-    filename: "{{title}}"
-
-  # Documentation sites
+  # Software documentation (35 domains)
   - name: documentation
     triggers:
-      - "docs."
-      - "readthedocs.io"
-      - "developer."
-      - "/docs/"
+      - "@docs"
     folder: Reference/Docs
-    tags:
-      - webclip
-      - docs
-    filename: "{{title}}"
+    tags: [docs, reference]
 
-  # Wikipedia articles
-  - name: wikipedia
+  # Educational content and .edu sites
+  - name: education
     triggers:
-      - "wikipedia.org/wiki"
-    folder: Reference/Wikipedia
-    tags:
-      - webclip
-      - reference
-      - wikipedia
-    filename: "{{title}}"
+      - "@edu"
+    folder: Reference/Education
+    tags: [education, learning]
 
-  # arXiv papers
-  - name: arxiv
+  # Government sites (.gov/.mil TLDs)
+  - name: government
     triggers:
-      - "arxiv.org"
-    folder: Reference/Papers
-    tags:
-      - webclip
-      - paper
-      - arxiv
-    filename: "{{title}}"
-    properties:
-      type: paper
+      - "@gov"
+    folder: Reference/Government
+    tags: [government, official]
 
-  # Hacker News
-  - name: hackernews
+  # Magazines and longform journalism (75 domains)
+  - name: longform
     triggers:
-      - "news.ycombinator.com"
-    folder: Inbox/News
-    tags:
-      - webclip
-      - news
-      - hackernews
-    filename: "{{title}}"
+      - "@longform"
+    folder: Reference/Longform
+    tags: [longform, magazine]
 
-  # Default template (required - used when no other template matches)
+  # US-focused news sources (50 domains)
+  - name: news
+    triggers:
+      - "@news"
+    folder: Reference/News
+    tags: [news, current-events]
+
+  # Science and technology publications (35 domains)
+  - name: scitech
+    triggers:
+      - "@scitech"
+    folder: Reference/SciTech
+    tags: [scitech, reading]
+
+  # Social media and discussion platforms (35 domains)
+  - name: social
+    triggers:
+      - "@social"
+    folder: Reference/Social
+    tags: [social, discussion]
+
+  # Wikis and encyclopedias (25 domains)
+  - name: wiki
+    triggers:
+      - "@wiki"
+    folder: Reference/Wiki
+    tags: [wiki, reference]
+
+  # Default template (required - catches unmatched URLs)
   - name: default
     folder: Inbox/Clips
-    tags:
-      - webclip
-    filename: "{{title}} {{date}}"
+    tags: [webclip]
 """
 
 
