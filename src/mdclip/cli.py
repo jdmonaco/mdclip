@@ -330,6 +330,13 @@ def main(args: list[str] | None = None) -> int:
     Returns:
         Exit code (0 for success)
     """
+    # Handle completion subcommand before argparse
+    if args is None:
+        args = sys.argv[1:]
+    if args and args[0] == "completion":
+        from .completion import completion_command
+        return completion_command(args[1:])
+
     parsed_args = parse_args(args)
 
     # Load configuration (auto-creates if missing)
