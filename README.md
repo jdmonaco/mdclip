@@ -208,6 +208,7 @@ mdclip includes built-in triggers for common content types using smart URL match
 | `@docs` | Software documentation and references | 35 |
 | `@news` | US-focused news sources | 50 |
 | `@scitech` | Science & technology publications | 35 |
+| `@social` | Social media & discussion platforms | 35 |
 
 #### `@academic`
 
@@ -259,6 +260,19 @@ templates:
       - "@scitech"
     folder: Reference/SciTech
     tags: [scitech, reading]
+```
+
+#### `@social`
+
+Matches social media and discussion platform URLs from Twitter/X, Reddit, Hacker News, YouTube, Mastodon, LinkedIn, and more. Trusts domain alone for known platforms.
+
+```yaml
+templates:
+  - name: social
+    triggers:
+      - "@social"
+    folder: Reference/Social
+    tags: [social, discussion]
 ```
 
 ## Output

@@ -1,0 +1,48 @@
+# Social Media & Discussion Platform Domains
+
+social_domains:
+  # Major Social Platforms
+  - twitter.com
+  - x.com
+  - facebook.com
+  - instagram.com
+  - linkedin.com
+  - tiktok.com
+  - snapchat.com
+  - pinterest.com
+
+  # Microblogging & Fediverse
+  - mastodon.social
+  - bsky.app
+  - threads.net
+  - tumblr.com
+
+  # Discussion & Forums
+  - reddit.com
+  - news.ycombinator.com
+  - lobste.rs
+  - lemmy.world
+  - tildes.net
+
+  # Q&A Platforms
+  - stackoverflow.com
+  - stackexchange.com
+  - quora.com
+
+  # Developer Social
+  - dev.to
+  - hashnode.com
+  - medium.com
+  - substack.com
+
+  # Video Platforms
+  - youtube.com
+  - youtu.be
+  - vimeo.com
+  - twitch.tv
+
+  # Messaging (Public Links)
+  - discord.com
+  - discord.gg
+  - t.me
+  - slack.com

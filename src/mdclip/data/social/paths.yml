@@ -1,0 +1,29 @@
+# Minimal path patterns for social media URLs
+
+url_path_patterns:
+  - /status/
+  - /posts/
+  - /post/
+  - /comments/
+  - /watch
+  - /video/
+  - /reel/
+  - /stories/
+  - /p/
+  - /r/
+
+query_parameters: []
+
+regex_patterns: {}
+
+combined_patterns:
+  - pattern: "twitter\\.com/\\w+/status/"
+    confidence: high
+  - pattern: "x\\.com/\\w+/status/"
+    confidence: high
+  - pattern: "reddit\\.com/r/\\w+/comments/"
+    confidence: high
+  - pattern: "youtube\\.com/watch\\?v="
+    confidence: high
+  - pattern: "news\\.ycombinator\\.com/item\\?id="
+    confidence: high
