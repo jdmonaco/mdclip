@@ -10,7 +10,24 @@ _mdclip_completions() {
     # Flags requiring argument
     case "$prev" in
         -o|--output)
-            COMPREPLY=($(compgen -d -- "$cur"))
+            # Complete vault-relative directories, or absolute paths
+            if [[ "$cur" == /* ]] || [[ "$cur" == ~* ]]; then
+                # Absolute path - use normal directory completion
+                COMPREPLY=($(compgen -d -- "$cur"))
+            else
+                # Vault-relative - complete from vault directory
+                local vault=""
+                if [[ -f ~/.mdclip.yml ]]; then
+                    vault=$(grep -E '^vault:' ~/.mdclip.yml 2>/dev/null | sed 's/vault:\s*//' | tr -d "\"'")
+                    vault="${vault/#\~/$HOME}"
+                fi
+                if [[ -n "$vault" && -d "$vault" ]]; then
+                    local IFS=$'\n'
+                    COMPREPLY=($(cd "$vault" && compgen -d -- "$cur" 2>/dev/null))
+                else
+                    COMPREPLY=($(compgen -d -- "$cur"))
+                fi
+            fi
             return 0
             ;;
         -t|--template)
