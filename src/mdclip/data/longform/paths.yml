@@ -1,0 +1,31 @@
+# Path patterns for longform/magazine URLs
+
+url_path_patterns:
+  - /article/
+  - /articles/
+  - /magazine/
+  - /features/
+  - /culture/
+  - /ideas/
+  - /books/
+  - /politics/
+  - /essays/
+  - /opinion/
+  - /review/
+  - /international/
+  - /2023/
+  - /2024/
+  - /2025/
+  - /2026/
+
+query_parameters: []
+
+regex_patterns: {}
+
+combined_patterns:
+  - pattern: "theatlantic\\.com/[\\w-]+/archive/"
+    confidence: high
+  - pattern: "newyorker\\.com/[\\w-]+/"
+    confidence: high
+  - pattern: "economist\\.com/[\\w-]+/"
+    confidence: high

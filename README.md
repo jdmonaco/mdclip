@@ -208,6 +208,7 @@ mdclip includes built-in triggers for common content types using smart URL match
 | `@docs` | Software documentation and references | 35 |
 | `@edu` | Educational content and .edu sites | 15+ |
 | `@gov` | Government sites (.gov/.mil) | 45+ |
+| `@longform` | Magazines and longform journalism | 75 |
 | `@news` | US-focused news sources | 50 |
 | `@scitech` | Science & technology publications | 35 |
 | `@social` | Social media & discussion platforms | 35 |
@@ -263,6 +264,19 @@ templates:
       - "@gov"
     folder: Reference/Government
     tags: [government, official]
+```
+
+#### `@longform`
+
+Matches general interest magazines and longform journalism sites including The Atlantic, New Yorker, Economist, Harper's, literary reviews (NYRB, LRB, Paris Review), and political magazines. Sources curated from [aldaily.com](https://aldaily.com).
+
+```yaml
+templates:
+  - name: longform
+    triggers:
+      - "@longform"
+    folder: Reference/Longform
+    tags: [longform, magazine]
 ```
 
 #### `@news`

@@ -1,0 +1,87 @@
+# Longform Journalism & General Interest Magazines
+# Sources: aldaily.com sidebar + major publications
+
+longform_domains:
+  # Major General Interest
+  - theatlantic.com
+  - newyorker.com
+  - time.com
+  - economist.com
+  - harpers.org
+  - vanityfair.com
+  - esquire.com
+  - gq.com
+  - vogue.com
+
+  # News Magazines
+  - newsweek.com
+  - theweek.com
+  - slate.com
+  - salon.com
+
+  # Literary Reviews
+  - nybooks.com               # NY Review of Books
+  - lrb.co.uk                 # London Review of Books
+  - the-tls.co.uk             # Times Literary Supplement
+  - theparisreview.org
+  - granta.com
+  - electricliterature.com
+  - lithub.com
+  - lareviewofbooks.org
+
+  # Ideas & Culture
+  - aeon.co
+  - thepointmag.com
+  - nplusonemag.com
+  - thebaffler.com
+  - hedgehogreview.com
+  - publicbooks.org
+  - cabinetmagazine.org
+  - believermag.com
+
+  # Political & Policy
+  - newrepublic.com
+  - thenation.com
+  - nationalreview.com
+  - theamericanconservative.com
+  - commonwealmagazine.org
+  - commentary.org
+  - jacobin.com
+  - currentaffairs.org
+  - reason.com
+  - prospect.org
+  - washingtonmonthly.com
+  - foreignaffairs.com
+  - foreignpolicy.com
+  - theamericaninterest.com
+  - worldaffairsjournal.org
+  - tabletmag.com
+  - firstthings.com
+  - quillette.com
+  - dissent.org
+
+  # Academic & Intellectual
+  - chronicle.com             # Chronicle of Higher Ed
+  - jstordaily.com
+  - bostonreview.net
+  - americanscholar.org
+  - wilsonquarterly.com
+  - vqronline.org             # Virginia Quarterly Review
+  - yalereview.org
+  - hudsonreview.com
+  - newcriterion.com
+  - philosophynow.org
+
+  # International
+  - spiegel.de
+  - theguardian.com/commentisfree
+  - spectator.co.uk
+  - prospectmagazine.co.uk
+  - standpointmag.co.uk
+  - dublinreview.com
+
+  # Longform Aggregators
+  - longreads.com
+  - longform.org
+  - narratively.com
+  - theringer.com
