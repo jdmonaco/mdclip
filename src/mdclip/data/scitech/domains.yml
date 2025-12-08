@@ -1,0 +1,39 @@
+# Science & Technology Publication Domains
+
+scitech_domains:
+  # Tech Magazines
+  - wired.com
+  - arstechnica.com
+  - theverge.com
+  - engadget.com
+  - techcrunch.com
+  - gizmodo.com
+  - thenextweb.com
+  - mashable.com
+  - zdnet.com
+  - cnet.com
+  - tomshardware.com
+  - anandtech.com
+
+  # Science Magazines
+  - scientificamerican.com
+  - newscientist.com
+  - popsci.com
+  - discovermagazine.com
+  - smithsonianmag.com
+  - nationalgeographic.com
+  - sciencenews.org
+  - livescience.com
+  - space.com
+  - quantamagazine.org
+
+  # Tech Industry
+  - techradar.com
+  - venturebeat.com
+  - protocol.com
+  - theregister.com
+  - slashdot.org
+  - hackaday.com
+
+  # AI/ML Focused
+  - technologyreview.com

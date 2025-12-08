@@ -205,7 +205,9 @@ mdclip includes built-in triggers for common content types using smart URL match
 | Trigger | Description | Domains |
 |---------|-------------|---------|
 | `@academic` | Scientific journals and publishers | 113 |
+| `@docs` | Software documentation and references | 35 |
 | `@news` | US-focused news sources | 50 |
+| `@scitech` | Science & technology publications | 35 |
 
 #### `@academic`
 
@@ -220,6 +222,19 @@ templates:
     tags: [paper, research]
 ```
 
+#### `@docs`
+
+Matches software documentation URLs from official language docs (Python, MDN, Rust), documentation platforms (Read the Docs, GitHub Pages), cloud providers, and spec references. Requires domain + path for precision.
+
+```yaml
+templates:
+  - name: documentation
+    triggers:
+      - "@docs"
+    folder: Reference/Docs
+    tags: [docs, reference]
+```
+
 #### `@news`
 
 Matches news article URLs from major US newspapers, TV networks, wire services, and digital-native outlets. Trusts domain alone (lower threshold) for known news sources.
@@ -231,6 +246,19 @@ templates:
       - "@news"
     folder: Reference/News
     tags: [news, current-events]
+```
+
+#### `@scitech`
+
+Matches popular science and technology publication URLs from Wired, Ars Technica, The Verge, Scientific American, and more. Trusts domain alone for known sources.
+
+```yaml
+templates:
+  - name: scitech
+    triggers:
+      - "@scitech"
+    folder: Reference/SciTech
+    tags: [scitech, reading]
 ```
 
 ## Output

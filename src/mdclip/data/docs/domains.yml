@@ -1,0 +1,47 @@
+# Software Documentation Domains
+
+docs_domains:
+  # Language/Framework Official Docs
+  - docs.python.org
+  - developer.mozilla.org      # MDN
+  - doc.rust-lang.org
+  - go.dev
+  - docs.oracle.com            # Java
+  - learn.microsoft.com        # .NET, TypeScript
+  - ruby-doc.org
+  - php.net
+  - cppreference.com
+  - devdocs.io
+
+  # Documentation Platforms
+  - readthedocs.io
+  - readthedocs.org
+  - gitbook.io
+  - github.io                  # GitHub Pages docs
+  - docusaurus.io
+  - mkdocs.org
+  - sphinx-doc.org
+
+  # Cloud Providers
+  - docs.aws.amazon.com
+  - cloud.google.com
+  - docs.microsoft.com
+  - docs.azure.com
+  - docs.digitalocean.com
+  - docs.cloudflare.com
+
+  # Major Project Docs
+  - docs.github.com
+  - docs.gitlab.com
+  - docs.docker.com
+  - kubernetes.io
+  - docs.npmjs.com
+  - packaging.python.org
+  - wiki.archlinux.org
+  - man7.org
+
+  # API/Spec References
+  - spec.whatwg.org
+  - w3.org
+  - ietf.org
+  - json-schema.org

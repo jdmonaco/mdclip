@@ -1,0 +1,30 @@
+# Path patterns for documentation URLs
+
+url_path_patterns:
+  - /docs/
+  - /documentation/
+  - /reference/
+  - /api/
+  - /manual/
+  - /guide/
+  - /tutorial/
+  - /learn/
+  - /getting-started/
+  - /quickstart/
+  - /handbook/
+  - /spec/
+  - /specification/
+
+query_parameters: []
+
+regex_patterns: {}
+
+combined_patterns:
+  - pattern: "readthedocs\\.(io|org)/en/(stable|latest)/"
+    confidence: high
+  - pattern: "docs\\.[\\w-]+\\.(com|io|org)/"
+    confidence: high
+  - pattern: "developer\\.mozilla\\.org/en-US/docs/"
+    confidence: high
+  - pattern: "[\\w-]+\\.github\\.io/(docs|documentation|guide|reference)/"
+    confidence: high

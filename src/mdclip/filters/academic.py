@@ -11,7 +11,7 @@ Usage in config:
         folder: Reference/Papers
 """
 
-from .builtin import BUILTIN_FILTERS, SCORE_REGEX_MATCH, BuiltinFilter
+from ..builtin import BUILTIN_FILTERS, SCORE_REGEX_MATCH, BuiltinFilter
 
 
 class AcademicFilter(BuiltinFilter):

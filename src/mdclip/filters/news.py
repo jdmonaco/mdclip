@@ -11,7 +11,7 @@ Usage in config:
         folder: Reference/News
 """
 
-from .builtin import BUILTIN_FILTERS, BuiltinFilter, MatchResult
+from ..builtin import BUILTIN_FILTERS, BuiltinFilter, MatchResult
 
 # Lower threshold for news - trust domains more
 NEWS_MATCH_THRESHOLD = 50

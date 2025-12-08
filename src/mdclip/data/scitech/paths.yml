@@ -1,0 +1,18 @@
+# Minimal path patterns for science/tech publications
+
+url_path_patterns:
+  - /article/
+  - /story/
+  - /news/
+  - /features/
+  - /reviews/
+  - /2023/
+  - /2024/
+  - /2025/
+  - /2026/
+
+query_parameters: []
+
+regex_patterns: {}
+
+combined_patterns: []

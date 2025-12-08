@@ -1,0 +1,9 @@
+"""Built-in URL filters for mdclip.
+
+Importing this package registers all built-in filters.
+"""
+
+from . import academic  # noqa: F401
+from . import docs  # noqa: F401
+from . import news  # noqa: F401
+from . import scitech  # noqa: F401
