@@ -41,6 +41,7 @@ from .output import (
     resolve_output_path,
     write_note,
 )
+from .ratelimit import DomainRateLimiter
 from .selector import select_section
 from .templates import Template, match_template, render_filename, sanitize_filename, slugify
 
@@ -126,6 +127,14 @@ Examples:
         "--no-open",
         action="store_true",
         help="Don't open note after clipping",
+    )
+
+    parser.add_argument(
+        "--rate-limit",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help="Seconds between requests to same domain (default: 3.0, 0 to disable)",
     )
 
     # Configuration
@@ -421,12 +430,49 @@ def main(args: list[str] | None = None) -> int:
             info("Aborted.")
             return 0
 
-    # Process each URL
+    # Initialize rate limiter
+    rate_limit = parsed_args.rate_limit
+    if rate_limit is None:
+        rate_limit = config.get("rate_limit_seconds", 3.0)
+    rate_limiter = DomainRateLimiter(delay_seconds=rate_limit) if rate_limit > 0 else None
+
+    # Process URLs with rate limiting
     processed_count = 0
     last_filepath: Path | None = None
-    for url in urls:
+    pending = list(urls)
+
+    while pending or (rate_limiter and rate_limiter.has_deferred()):
+        # Check for ready deferred URLs
+        if rate_limiter:
+            ready_deferred = rate_limiter.get_ready_deferred()
+            if ready_deferred:
+                for deferred_url in ready_deferred:
+                    info(f"↩ Processing deferred: {rate_limiter.get_domain(deferred_url)}")
+                pending = ready_deferred + pending
+
+        if not pending:
+            # All pending processed, but deferred remain - wait for next
+            if rate_limiter and rate_limiter.has_deferred():
+                url = rate_limiter.pop_deferred_with_wait()
+                if url:
+                    wait_time = rate_limiter.delay_seconds
+                    info(f"⏳ Rate limiting: waiting {wait_time:.1f}s for {rate_limiter.get_domain(url)}...")
+                    pending = [url]
+            continue
+
+        url = pending.pop(0)
+
+        # Check rate limit
+        if rate_limiter and not rate_limiter.is_allowed(url):
+            wait_time = rate_limiter.time_until_allowed(url)
+            info(f"ℹ Rate limiting: deferring {rate_limiter.get_domain(url)} ({wait_time:.1f}s remaining)")
+            rate_limiter.defer(url)
+            continue
+
         try:
             result = process_url(url, config, parsed_args)
+            if rate_limiter:
+                rate_limiter.record_access(url)
             if result:
                 last_filepath = result
                 processed_count += 1

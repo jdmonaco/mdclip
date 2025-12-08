@@ -15,6 +15,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "auto_format": False,
     "skip_existing": False,
     "open_in_obsidian": True,
+    "rate_limit_seconds": 3.0,
     "default_properties": ["title", "source", "author", "created", "published", "description"],
     "templates": [
         {
@@ -56,6 +57,11 @@ skip_existing: false
 # Inside vault: opens in Obsidian; outside vault: opens in glow/less
 # Disable with --no-open flag or set to false here
 open_in_obsidian: true
+
+# Rate limiting: minimum seconds between requests to the same domain
+# Prevents aggressive requests; set to 0 to disable
+# Can also be overridden per-run with --rate-limit flag
+rate_limit_seconds: 3.0
 
 # Default frontmatter properties (always included when available)
 # Supported: title, source, author, created, published, description, tags
