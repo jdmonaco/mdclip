@@ -5,6 +5,7 @@ A command-line tool that clips web pages to Markdown files with YAML frontmatter
 ## Features
 
 - **Template-based routing**: URLs are matched to templates that control output folder, tags, and frontmatter
+- **Built-in category filters**: 9 smart filters (`@academic`, `@docs`, `@news`, `@wiki`, etc.) automatically categorize URLs from 400+ domains using domain and path scoring
 - **YAML frontmatter**: Automatic metadata including title, author (if available), source URL, creation date, published date (if available), description, and tags
 - **Multiple input formats**: Single URLs, bookmark exports, markdown files with links, or text files with URL lists
 - **Clipboard support**: Automatically reads URLs from clipboard when no input is provided (macOS)
