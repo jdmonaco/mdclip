@@ -1,0 +1,24 @@
+# Educational Content Domains
+
+edu_domains:
+  # Online Learning Platforms
+  - coursera.org
+  - edx.org
+  - udemy.com
+  - udacity.com
+  - khanacademy.org
+  - skillshare.com
+  - pluralsight.com
+  - linkedin.com/learning
+  - codecademy.com
+  - freecodecamp.org
+  - brilliant.org
+
+  # Open Educational Resources
+  - ocw.mit.edu
+  - oyc.yale.edu
+  - online.stanford.edu
+
+  # Educational Reference
+  - education.gov
+  - ed.gov

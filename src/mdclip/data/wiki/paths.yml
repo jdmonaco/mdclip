@@ -1,0 +1,15 @@
+# Path patterns for wiki URLs
+
+url_path_patterns:
+  - /wiki/
+  - /w/
+
+query_parameters: []
+
+regex_patterns: {}
+
+combined_patterns:
+  - pattern: "wikipedia\\.org/wiki/"
+    confidence: high
+  - pattern: "fandom\\.com/wiki/"
+    confidence: high

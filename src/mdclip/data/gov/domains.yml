@@ -1,0 +1,54 @@
+# Government & Official Domains
+
+gov_domains:
+  # US Federal
+  - usa.gov
+  - whitehouse.gov
+  - congress.gov
+  - senate.gov
+  - house.gov
+  - supremecourt.gov
+  - uscourts.gov
+
+  # US Agencies
+  - nih.gov
+  - cdc.gov
+  - fda.gov
+  - epa.gov
+  - nasa.gov
+  - noaa.gov
+  - usda.gov
+  - dol.gov
+  - treasury.gov
+  - state.gov
+  - justice.gov
+  - defense.gov
+  - energy.gov
+  - ed.gov
+  - hhs.gov
+  - dhs.gov
+  - va.gov
+  - dot.gov
+  - hud.gov
+  - commerce.gov
+  - interior.gov
+  - usgs.gov
+  - irs.gov
+  - ssa.gov
+  - sec.gov
+  - ftc.gov
+  - fcc.gov
+  - fbi.gov
+  - cia.gov
+  - nsa.gov
+
+  # Research & Data
+  - data.gov
+  - census.gov
+  - bls.gov
+  - bea.gov
+
+  # International
+  - gov.uk
+  - canada.ca
+  - europa.eu

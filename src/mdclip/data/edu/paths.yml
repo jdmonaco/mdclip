@@ -1,0 +1,23 @@
+# Path patterns for educational URLs
+
+url_path_patterns:
+  - /course/
+  - /courses/
+  - /learn/
+  - /lessons/
+  - /tutorial/
+  - /tutorials/
+  - /class/
+  - /lecture/
+
+query_parameters: []
+
+regex_patterns:
+  # Match .edu TLD
+  edu_tld: "\\.edu(/|$)"
+
+combined_patterns:
+  - pattern: "coursera\\.org/learn/"
+    confidence: high
+  - pattern: "khanacademy\\.org/[\\w-]+/[\\w-]+"
+    confidence: high

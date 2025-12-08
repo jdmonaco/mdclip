@@ -1,0 +1,13 @@
+# Path patterns for government URLs
+
+url_path_patterns: []
+
+query_parameters: []
+
+regex_patterns:
+  # Match .gov TLD
+  gov_tld: "\\.gov(/|$)"
+  # Match .mil TLD
+  mil_tld: "\\.mil(/|$)"
+
+combined_patterns: []

@@ -1,0 +1,31 @@
+# Wiki & Encyclopedia Domains
+
+wiki_domains:
+  # Wikimedia Projects
+  - wikipedia.org
+  - wikimedia.org
+  - wiktionary.org
+  - wikiquote.org
+  - wikibooks.org
+  - wikisource.org
+  - wikinews.org
+  - wikiversity.org
+  - wikidata.org
+  - wikivoyage.org
+  - mediawiki.org
+
+  # Fandom / Fan Wikis
+  - fandom.com
+  - wikia.com
+
+  # Other Encyclopedias
+  - britannica.com
+  - encyclopedia.com
+  - scholarpedia.org
+
+  # Specialized Wikis
+  - wiki.archlinux.org
+  - wiki.gentoo.org
+  - wiki.debian.org
+  - wiki.ubuntu.com
+  - wiki.freebsd.org

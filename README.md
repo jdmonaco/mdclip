@@ -206,9 +206,12 @@ mdclip includes built-in triggers for common content types using smart URL match
 |---------|-------------|---------|
 | `@academic` | Scientific journals and publishers | 113 |
 | `@docs` | Software documentation and references | 35 |
+| `@edu` | Educational content and .edu sites | 15+ |
+| `@gov` | Government sites (.gov/.mil) | 45+ |
 | `@news` | US-focused news sources | 50 |
 | `@scitech` | Science & technology publications | 35 |
 | `@social` | Social media & discussion platforms | 35 |
+| `@wiki` | Wikis and encyclopedias | 25 |
 
 #### `@academic`
 
@@ -234,6 +237,32 @@ templates:
       - "@docs"
     folder: Reference/Docs
     tags: [docs, reference]
+```
+
+#### `@edu`
+
+Matches educational content from online learning platforms (Coursera, Khan Academy, edX) and any .edu domain. The .edu TLD is matched automatically.
+
+```yaml
+templates:
+  - name: education
+    triggers:
+      - "@edu"
+    folder: Reference/Education
+    tags: [education, learning]
+```
+
+#### `@gov`
+
+Matches government and official sites via .gov and .mil TLDs plus known agency domains. Works for federal, state, and international government sites.
+
+```yaml
+templates:
+  - name: government
+    triggers:
+      - "@gov"
+    folder: Reference/Government
+    tags: [government, official]
 ```
 
 #### `@news`
@@ -273,6 +302,19 @@ templates:
       - "@social"
     folder: Reference/Social
     tags: [social, discussion]
+```
+
+#### `@wiki`
+
+Matches wiki and encyclopedia URLs from Wikipedia, Fandom, Britannica, and software project wikis. Trusts domain alone for known wiki platforms.
+
+```yaml
+templates:
+  - name: wiki
+    triggers:
+      - "@wiki"
+    folder: Reference/Wiki
+    tags: [wiki, reference]
 ```
 
 ## Output
