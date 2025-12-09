@@ -7,33 +7,55 @@ _mdclip_completions() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
+    # Handle 'completion' subcommand
+    if [[ "${COMP_WORDS[1]}" == "completion" ]]; then
+        case "$COMP_CWORD" in
+            1)
+                COMPREPLY=($(compgen -W "completion" -- "$cur"))
+                ;;
+            2)
+                COMPREPLY=($(compgen -W "bash" -- "$cur"))
+                ;;
+            *)
+                COMPREPLY=($(compgen -W "--install --path" -- "$cur"))
+                ;;
+        esac
+        return 0
+    fi
+
     # Flags requiring argument
     case "$prev" in
         -o|--output)
-            # Complete vault-relative directories, or absolute paths
+            # Complete vault-relative directories with trailing slash for navigation
+            compopt -o nospace  # Don't add space, allow continuing into subdirs
+            local IFS=$'\n'
+
             if [[ "$cur" == /* ]] || [[ "$cur" == ~* ]]; then
-                # Absolute path - use normal directory completion
-                COMPREPLY=($(compgen -d -- "$cur"))
+                # Absolute path - expand ~ and complete
+                local search_path="${cur/#\~/$HOME}"
+                COMPREPLY=($(compgen -d -- "$search_path" 2>/dev/null))
             else
                 # Vault-relative - complete from vault directory
                 local vault=""
                 if [[ -f ~/.mdclip.yml ]]; then
-                    vault=$(grep -E '^vault:' ~/.mdclip.yml 2>/dev/null | sed 's/vault:\s*//' | tr -d "\"'")
+                    vault=$(awk '/^vault:/ {print $2}' ~/.mdclip.yml 2>/dev/null | tr -d "\"'")
                     vault="${vault/#\~/$HOME}"
                 fi
                 if [[ -n "$vault" && -d "$vault" ]]; then
-                    local IFS=$'\n'
                     COMPREPLY=($(cd "$vault" && compgen -d -- "$cur" 2>/dev/null))
                 else
                     COMPREPLY=($(compgen -d -- "$cur"))
                 fi
             fi
+            # Add trailing slash to all directory completions
+            COMPREPLY=("${COMPREPLY[@]/%//}")
             return 0
             ;;
         -t|--template)
             local templates=""
             if [[ -f ~/.mdclip.yml ]]; then
-                templates=$(grep -E '^\s+-?\s*name:' ~/.mdclip.yml 2>/dev/null | sed 's/.*name:\s*//' | tr -d "\"'" | tr '\n' ' ')
+                # YAML format: "  - name: value" or "    name: value"
+                templates=$(awk -F': ' '/^[[:space:]]+-?[[:space:]]*name:/ {gsub(/["\047]/, "", $2); print $2}' ~/.mdclip.yml 2>/dev/null | tr '\n' ' ')
             fi
             COMPREPLY=($(compgen -W "$templates" -- "$cur"))
             return 0
@@ -54,8 +76,15 @@ _mdclip_completions() {
         return 0
     fi
 
-    # File/URL completion for positional args
-    COMPREPLY=($(compgen -f -- "$cur"))
+    # Positional args: file completion, plus 'completion' subcommand if it matches
+    if [[ "$COMP_CWORD" -eq 1 ]] && [[ "completion" == "$cur"* ]]; then
+        COMPREPLY=("completion")
+        return 0
+    fi
+
+    # Default: file completion for URLs, bookmarks, etc.
+    compopt -o default
+    COMPREPLY=()
 }
 
 complete -F _mdclip_completions mdclip

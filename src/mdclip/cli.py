@@ -61,6 +61,10 @@ Examples:
   mdclip -o "Reference/Papers" "https://arxiv.org/abs/..."
   mdclip --dry-run bookmarks.html
   mdclip --skip-existing urls.txt
+
+Shell completion:
+  mdclip completion bash            Output completion script
+  mdclip completion bash --install  Install to user completions directory
 """,
     )
 
@@ -87,9 +91,8 @@ Examples:
 
     parser.add_argument(
         "--tags",
-        nargs="+",
-        metavar="TAG",
-        help="Additional tags to include in frontmatter",
+        metavar="TAGS",
+        help="Additional tags, comma-separated (e.g., --tags foo,bar,baz)",
     )
 
     # Behavior
@@ -257,11 +260,12 @@ def process_url(
     }
 
     # Generate frontmatter
+    extra_tags = [t.strip() for t in args.tags.split(",")] if args.tags else None
     frontmatter = build_frontmatter(
         metadata,
         template,
         config,
-        extra_tags=args.tags,
+        extra_tags=extra_tags,
     )
 
     # Assemble full note with title heading

@@ -1,13 +1,21 @@
 """Shell completion script generation and installation."""
 
 import sys
-from importlib.resources import files
+from importlib.resources import as_file, files
 from pathlib import Path
 
 
 def get_completion_path() -> Path:
     """Return the user-level bash completion installation path."""
     return Path.home() / ".local/share/bash-completion/completions/mdclip"
+
+
+def get_bash_script_source() -> Path:
+    """Return the path to the bash completion script in the package."""
+    resource = files("mdclip.data").joinpath("completion.bash")
+    # For editable installs, this returns the actual file path
+    with as_file(resource) as path:
+        return Path(path).resolve()
 
 
 def get_bash_completion_script() -> str:
@@ -32,16 +40,21 @@ def completion_command(args: list[str]) -> int:
         print(get_completion_path())
         return 0
 
-    script = get_bash_completion_script()
-
     if "--install" in flags:
-        path = get_completion_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(script)
-        print(f"Installed: {path}", file=sys.stderr)
+        dest = get_completion_path()
+        dest.parent.mkdir(parents=True, exist_ok=True)
+
+        # Remove existing file/symlink
+        if dest.exists() or dest.is_symlink():
+            dest.unlink()
+
+        # Create symlink to source file
+        source = get_bash_script_source()
+        dest.symlink_to(source)
+        print(f"Installed: {dest} -> {source}", file=sys.stderr)
         print("Restart your shell or run: source ~/.bashrc", file=sys.stderr)
         return 0
 
     # Default: print to stdout
-    print(script)
+    print(get_bash_completion_script())
     return 0
