@@ -6,7 +6,9 @@ url_path_patterns:
   - /reference/
   - /api/
   - /manual/
+  - /project/
   - /guide/
+  - /user-guide/
   - /tutorial/
   - /learn/
   - /getting-started/

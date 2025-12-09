@@ -37,6 +37,7 @@ docs_domains:
   - kubernetes.io
   - docs.npmjs.com
   - packaging.python.org
+  - pypi.org
   - wiki.archlinux.org
   - man7.org
 
@@ -45,3 +46,7 @@ docs_domains:
   - w3.org
   - ietf.org
   - json-schema.org
+  - platform.claude.com
+  - platform.openai.com
+  - docs.ollama.com
+  - lmstudio.ai
