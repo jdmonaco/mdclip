@@ -246,7 +246,8 @@ def process_url(
         info(f"Title: {title}")
 
     if not content:
-        warning(f"No content extracted from {url}")
+        warning(f"No content extracted from {url}, skipping")
+        return None
 
     # Build metadata from extracted data
     metadata = {
