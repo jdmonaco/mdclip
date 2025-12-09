@@ -12,8 +12,10 @@ A command-line tool that clips web pages to Markdown files with YAML frontmatter
 - **Obsidian integration**: Auto-opens clipped notes in Obsidian after single-URL clipping
 - **Bookmark section selection**: For large bookmark files, interactively select which folder to process
 - **Skip existing**: Option to skip URLs that already have a clipped file with the same source
+- **Rate limiting**: Configurable delay between requests to the same domain (default 3s) with smart deferred queue
 - **Optional formatting**: Post-process output with mdformat for consistent styling
 - **Batch processing**: Clip multiple URLs in one command with confirmation for large batches
+- **Shell completion**: Bash completion with `mdclip completion bash --install`
 - **Rich console output**: Colored status messages and progress spinners
 
 ## Installation
@@ -65,10 +67,10 @@ vim ~/.mdclip.yml
 ## Usage
 
 ```
-usage: mdclip [-h] [-o FOLDER] [-t NAME] [--tags TAG [TAG ...]]
-              [--skip-existing] [-n] [-y] [--all-sections] [--no-format]
-              [--no-open] [--vault PATH] [--config FILE] [--list-templates]
-              [--verbose] [--version]
+usage: mdclip [-h] [-o FOLDER] [-t NAME] [--tags TAGS] [--skip-existing] [-n]
+              [-y] [--all-sections] [--no-format] [--no-open]
+              [--rate-limit SECONDS] [--vault PATH] [--config FILE]
+              [--list-templates] [--verbose] [--version]
               [INPUT ...]
 
 Clip web pages to Markdown with YAML frontmatter.
@@ -81,18 +83,23 @@ options:
   -h, --help            show this help message and exit
   -o, --output FOLDER   Output folder (relative to vault or absolute path)
   -t, --template NAME   Use named template (bypasses URL pattern matching)
-  --tags TAG [TAG ...]  Additional tags to include in frontmatter
+  --tags TAGS           Additional tags, comma-separated (e.g., --tags foo,bar,baz)
   --skip-existing       Skip URLs that already have a clipped file
   -n, --dry-run         Show what would be done without writing files
   -y, --yes             Skip confirmation prompts
   --all-sections        Process all bookmark sections without prompting
   --no-format           Skip mdformat post-processing
   --no-open             Don't open note after clipping
+  --rate-limit SECONDS  Seconds between requests to same domain (default: 3.0, 0 to disable)
   --vault PATH          Override vault path from config
   --config FILE         Use alternate config file
   --list-templates      List configured templates and exit
   --verbose             Show detailed output
   --version             show program's version number and exit
+
+Shell completion:
+  mdclip completion bash            Output completion script
+  mdclip completion bash --install  Install to user completions directory
 ```
 
 ## Examples
@@ -113,8 +120,8 @@ mdclip --dry-run "https://example.com"
 # Override output folder
 mdclip -o "Projects/Research" "https://arxiv.org/abs/..."
 
-# Add extra tags
-mdclip --tags python tutorial "https://realpython.com/..."
+# Add extra tags (comma-separated)
+mdclip --tags python,tutorial "https://realpython.com/..."
 
 # Clip from a bookmarks export (prompts to select a section if >10 URLs)
 mdclip ~/Downloads/bookmarks.html
@@ -166,6 +173,10 @@ skip_existing: false
 # Open clipped note after single-URL processing
 # Inside vault: opens in Obsidian; outside vault: opens in glow/less
 open_in_obsidian: true
+
+# Rate limiting: seconds between requests to the same domain
+# Set to 0 to disable; override with --rate-limit flag
+rate_limit_seconds: 3.0
 ```
 
 ### Templates
