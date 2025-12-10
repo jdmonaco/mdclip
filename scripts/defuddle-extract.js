@@ -22,13 +22,38 @@
 import { JSDOM } from 'jsdom';
 import { Defuddle } from 'defuddle/node';
 
+const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 async function extractPage(url) {
     try {
-        // Fetch the page with JSDOM
-        const dom = await JSDOM.fromURL(url, {
-            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            referrer: url,
-        });
+        // Check for cookies from environment variable
+        const cookieHeader = process.env.MDCLIP_COOKIES || null;
+
+        let dom;
+        if (cookieHeader) {
+            // Fetch with cookies using fetch API, then create JSDOM from HTML
+            const response = await fetch(url, {
+                headers: {
+                    'User-Agent': USER_AGENT,
+                    'Cookie': cookieHeader,
+                    'Referer': url,
+                },
+                redirect: 'follow',
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const html = await response.text();
+            dom = new JSDOM(html, { url });
+        } else {
+            // Standard fetch without cookies
+            dom = await JSDOM.fromURL(url, {
+                userAgent: USER_AGENT,
+                referrer: url,
+            });
+        }
 
         // Extract content with defuddle
         const result = await Defuddle(dom, url, {

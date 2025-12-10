@@ -15,6 +15,7 @@ from .config import (
     merge_config,
 )
 from .console import confirm, console, create_spinner, error, info, success, warning
+from .cookies import filter_cookies_for_url, format_cookie_header, load_cookies_from_file
 from .extractor import (
     DefuddleError,
     DefuddleNotInstalledError,
@@ -140,6 +141,12 @@ Shell completion:
         help="Seconds between requests to same domain (default: 3.0, 0 to disable)",
     )
 
+    parser.add_argument(
+        "--cookies",
+        metavar="FILE",
+        help="Load cookies from Netscape cookies.txt file for authenticated requests",
+    )
+
     # Configuration
     parser.add_argument(
         "--vault",
@@ -234,10 +241,24 @@ def process_url(
         info(f"[dry-run] Would process: {url}")
         return None
 
+    # Load cookies if provided
+    cookie_header = None
+    if args.cookies:
+        cookies_path = Path(args.cookies).expanduser()
+        if not cookies_path.exists():
+            error(f"Cookies file not found: {cookies_path}")
+            return None
+        all_cookies = load_cookies_from_file(cookies_path)
+        url_cookies = filter_cookies_for_url(all_cookies, url)
+        if url_cookies:
+            cookie_header = format_cookie_header(url_cookies)
+            if args.verbose:
+                info(f"Using {len(url_cookies)} cookies for {urlparse(url).netloc}")
+
     # Extract content and metadata with spinner
     with create_spinner() as progress:
         progress.add_task(f"Extracting: {url}", total=None)
-        page_data = extract_page(url)
+        page_data = extract_page(url, cookies=cookie_header)
 
     title = page_data.get("title", "Untitled")
     content = page_data.get("content", "")

@@ -1,6 +1,7 @@
 """Content extraction using defuddle (Node.js)."""
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -140,12 +141,15 @@ def _resolve_relative_links(content: str, source_url: str) -> str:
     return MARKDOWN_LINK_PATTERN.sub(replace_link, content)
 
 
-def extract_page(url: str, timeout: int = 60) -> dict[str, Any]:
+def extract_page(
+    url: str, timeout: int = 60, cookies: str | None = None
+) -> dict[str, Any]:
     """Extract content and metadata from a URL using defuddle.
 
     Args:
         url: The URL to extract content from
         timeout: Timeout in seconds
+        cookies: Optional Cookie header value for authenticated requests
 
     Returns:
         Dict with keys: title, author, description, published, content,
@@ -173,11 +177,17 @@ def extract_page(url: str, timeout: int = 60) -> dict[str, Any]:
         raise DefuddleError(f"Extraction script not found: {script_path}")
 
     try:
+        # Set up environment, passing cookies if provided
+        env = os.environ.copy()
+        if cookies:
+            env["MDCLIP_COOKIES"] = cookies
+
         result = subprocess.run(
             ["node", str(script_path), url],
             capture_output=True,
             text=True,
             timeout=timeout,
+            env=env,
         )
 
         if result.returncode != 0:
