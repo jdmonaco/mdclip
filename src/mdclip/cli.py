@@ -61,7 +61,7 @@ Examples:
   mdclip "https://example.com/article"
   mdclip -o "Reference/Papers" "https://arxiv.org/abs/..."
   mdclip --dry-run bookmarks.html
-  mdclip --skip-existing urls.txt
+  mdclip --force urls.txt
 
 Shell completion:
   mdclip completion bash            Output completion script
@@ -98,9 +98,9 @@ Shell completion:
 
     # Behavior
     parser.add_argument(
-        "--skip-existing",
+        "--force",
         action="store_true",
-        help="Skip URLs that already have a clipped file",
+        help="Force re-download even if file with same source URL exists",
     )
 
     parser.add_argument(
@@ -310,8 +310,8 @@ def process_url(
     filename = sanitize_filename(filename) + ".md"
     base_path = output_folder / filename
 
-    # Check for existing file
-    skip_existing = args.skip_existing or config.get("skip_existing", False)
+    # Check for existing file (skip by default unless --force)
+    skip_existing = not args.force
     existing = check_existing_file(base_path, url)
 
     if existing.exists:

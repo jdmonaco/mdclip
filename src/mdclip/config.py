@@ -13,7 +13,6 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "filename_date_format": "%Y-%m-%d",
     "default_folder": "Inbox/Clips",
     "auto_format": False,
-    "skip_existing": False,
     "open_in_obsidian": True,
     "rate_limit_seconds": 3.0,
     "default_properties": ["title", "source", "author", "created", "published", "description"],
@@ -47,11 +46,6 @@ default_folder: Inbox/Clips
 # Auto-format output with mdformat (if installed)
 # Disabled by default - set to true to enable
 auto_format: false
-
-# Skip URLs if a file already exists with the same source URL
-# When false (default), appends (1), (2), etc. to filename
-# Can also be enabled per-run with --skip-existing flag
-skip_existing: false
 
 # Open clipped note after single-URL processing
 # Inside vault: opens in Obsidian; outside vault: opens in glow/less
