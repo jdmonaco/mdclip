@@ -458,8 +458,8 @@ def main(args: list[str] | None = None) -> int:
         if rate_limiter:
             ready_deferred = rate_limiter.get_ready_deferred()
             if ready_deferred:
-                for deferred_url in ready_deferred:
-                    info(f"↩ Processing deferred: {rate_limiter.get_domain(deferred_url)}")
+                domains = sorted(set(rate_limiter.get_domain(u) for u in ready_deferred))
+                info(f"↩ Processing {len(ready_deferred)} deferred ({', '.join(domains)})")
                 pending = ready_deferred + pending
 
         if not pending:
@@ -468,39 +468,47 @@ def main(args: list[str] | None = None) -> int:
                 url = rate_limiter.pop_deferred_with_wait()
                 if url:
                     wait_time = rate_limiter.delay_seconds
-                    info(f"⏳ Rate limiting: waiting {wait_time:.1f}s for {rate_limiter.get_domain(url)}...")
+                    info(f"⏳ Waiting {wait_time:.1f}s for {rate_limiter.get_domain(url)}...")
                     pending = [url]
             continue
 
-        url = pending.pop(0)
+        # Process all currently pending URLs in a batch
+        deferred_this_batch: list[str] = []
+        processing_queue = pending.copy()
+        pending.clear()
 
-        # Check rate limit
-        if rate_limiter and not rate_limiter.is_allowed(url):
-            wait_time = rate_limiter.time_until_allowed(url)
-            info(f"ℹ Rate limiting: deferring {rate_limiter.get_domain(url)} ({wait_time:.1f}s remaining)")
-            rate_limiter.defer(url)
-            continue
+        for url in processing_queue:
+            # Check rate limit
+            if rate_limiter and not rate_limiter.is_allowed(url):
+                rate_limiter.defer(url)
+                deferred_this_batch.append(url)
+                continue
 
-        try:
-            result = process_url(url, config, parsed_args)
-            if rate_limiter:
-                rate_limiter.record_access(url)
-            if result:
-                last_filepath = result
-                processed_count += 1
-            elif parsed_args.dry_run:
-                processed_count += 1
-        except (NodeNotInstalledError, DefuddleNotInstalledError) as e:
-            error(str(e))
-            return 1
-        except DefuddleError as e:
-            error(f"Processing {url}: {e}")
-            if parsed_args.verbose:
-                traceback.print_exc()
-        except Exception as e:
-            error(f"Processing {url}: {e}")
-            if parsed_args.verbose:
-                traceback.print_exc()
+            try:
+                result = process_url(url, config, parsed_args)
+                if rate_limiter:
+                    rate_limiter.record_access(url)
+                if result:
+                    last_filepath = result
+                    processed_count += 1
+                elif parsed_args.dry_run:
+                    processed_count += 1
+            except (NodeNotInstalledError, DefuddleNotInstalledError) as e:
+                error(str(e))
+                return 1
+            except DefuddleError as e:
+                error(f"Processing {url}: {e}")
+                if parsed_args.verbose:
+                    traceback.print_exc()
+            except Exception as e:
+                error(f"Processing {url}: {e}")
+                if parsed_args.verbose:
+                    traceback.print_exc()
+
+        # Emit aggregated deferral message for this batch
+        if deferred_this_batch:
+            domains = sorted(set(rate_limiter.get_domain(u) for u in deferred_this_batch))
+            info(f"Deferred {len(deferred_this_batch)} URL(s) ({', '.join(domains)})")
 
     # Open note after single-URL success
     if len(urls) == 1 and processed_count == 1 and last_filepath:
