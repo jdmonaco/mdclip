@@ -67,10 +67,10 @@ vim ~/.mdclip.yml
 ## Usage
 
 ```
-usage: mdclip [-h] [-o FOLDER] [-t NAME] [--tags TAGS] [--skip-existing] [-n]
+usage: mdclip [-h] [-o FOLDER] [-t NAME] [--tags TAGS] [--force] [-n]
               [-y] [--all-sections] [--no-format] [--no-open]
-              [--rate-limit SECONDS] [--vault PATH] [--config FILE]
-              [--list-templates] [--verbose] [--version]
+              [--rate-limit SECONDS] [--cookies FILE] [--vault PATH]
+              [--config FILE] [--list-templates] [--verbose] [--version]
               [INPUT ...]
 
 Clip web pages to Markdown with YAML frontmatter.
@@ -84,13 +84,14 @@ options:
   -o, --output FOLDER   Output folder (relative to vault or absolute path)
   -t, --template NAME   Use named template (bypasses URL pattern matching)
   --tags TAGS           Additional tags, comma-separated (e.g., --tags foo,bar,baz)
-  --skip-existing       Skip URLs that already have a clipped file
+  --force               Force re-download even if file with same source URL exists
   -n, --dry-run         Show what would be done without writing files
   -y, --yes             Skip confirmation prompts
   --all-sections        Process all bookmark sections without prompting
   --no-format           Skip mdformat post-processing
   --no-open             Don't open note after clipping
   --rate-limit SECONDS  Seconds between requests to same domain (default: 3.0, 0 to disable)
+  --cookies FILE        Load cookies from Netscape cookies.txt for authenticated requests
   --vault PATH          Override vault path from config
   --config FILE         Use alternate config file
   --list-templates      List configured templates and exit
@@ -141,8 +142,8 @@ mdclip urls.txt
 # Force a specific template
 mdclip -t documentation "https://example.com/docs"
 
-# Skip URLs that already have a clipped file
-mdclip --skip-existing urls.txt
+# Force re-download even if file exists (default is to skip)
+mdclip --force urls.txt
 
 # Clip without opening in Obsidian
 mdclip --no-open "https://example.com"
@@ -166,9 +167,6 @@ default_folder: Inbox/Clips
 
 # Enable mdformat post-processing
 auto_format: false
-
-# Skip URLs if a file already exists with the same source URL
-skip_existing: false
 
 # Open clipped note after single-URL processing
 # Inside vault: opens in Obsidian; outside vault: opens in glow/less
@@ -342,6 +340,23 @@ templates:
     folder: Reference/Wiki
     tags: [wiki, reference]
 ```
+
+## Authenticated/Paywalled Content
+
+For content behind logins or paywalls, you can provide browser cookies:
+
+1. Install a browser extension to export cookies:
+   - Firefox: [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)
+   - Chrome: [Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
+
+2. Export cookies for the target site (Netscape format)
+
+3. Use with mdclip:
+   ```bash
+   mdclip --cookies ~/Downloads/cookies.txt "https://nature.com/articles/..."
+   ```
+
+**Note:** Cookies are used only for the HTTP request and are not stored or transmitted elsewhere.
 
 ## Output
 
