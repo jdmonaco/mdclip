@@ -7,7 +7,7 @@
     "extract": "node scripts/defuddle-extract.js"
   },
   "dependencies": {
-    "defuddle": "^0.6.0",
-    "jsdom": "^27.2.0"
+    "defuddle": "^0.6.6",
+    "jsdom": "^27.4.0"
   }
 }
