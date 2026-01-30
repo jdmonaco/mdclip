@@ -14,8 +14,26 @@ url_path_patterns:
   - /getting-started/
   - /quickstart/
   - /handbook/
+  - /protocol/
+  - /protocols/
+  - /sdk/
+  - /sdks/
   - /spec/
   - /specification/
+  - /specifications/
+  - /schemas/
+  - /changelog/
+  - /release-notes/
+  - /migration/
+  - /upgrade/
+  - /examples/
+  - /samples/
+  - /cookbook/
+  - /recipes/
+  - /best-practices/
+  - /faq/
+  - /troubleshooting/
+  - /how-to/
 
 query_parameters: []
 

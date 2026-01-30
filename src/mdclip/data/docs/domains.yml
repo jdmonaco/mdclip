@@ -46,7 +46,31 @@ docs_domains:
   - w3.org
   - ietf.org
   - json-schema.org
+
+  # AI/LLM Platforms
   - platform.claude.com
+  - docs.anthropic.com
   - platform.openai.com
   - docs.ollama.com
   - lmstudio.ai
+  - docs.mistral.ai
+  - docs.cohere.com
+  - docs.perplexity.ai
+  - ai.google.dev              # Gemini
+  - docs.together.ai
+  - docs.fireworks.ai
+  - docs.groq.com
+  - docs.anyscale.com
+
+  # AI/LLM Orchestration Protocols
+  - modelcontextprotocol.io    # MCP
+  - agentclientprotocol.com    # ACP / Agent Protocol
+  - langchain.com
+  - docs.langchain.com
+  - docs.llamaindex.ai
+  - docs.crewai.com
+  - docs.autogen.ai
+  - sdk.vercel.ai              # Vercel AI SDK
+  - docs.haystack.deepset.ai
+  - docs.semantic-kernel.com
+  - opencode.ai
