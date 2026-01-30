@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
+from .console import info, warning
+
 
 # Pattern to fix dropcap letters separated from their word
 # Matches: single capital letter, blank line, then lowercase continuation
@@ -49,6 +51,12 @@ class DefuddleNotInstalledError(DefuddleError):
 
 class NodeNotInstalledError(DefuddleError):
     """Node.js is not installed."""
+
+    pass
+
+
+class ExaError(Exception):
+    """Error during Exa API content extraction."""
 
     pass
 
@@ -141,8 +149,72 @@ def _resolve_relative_links(content: str, source_url: str) -> str:
     return MARKDOWN_LINK_PATTERN.sub(replace_link, content)
 
 
+def extract_page_exa(url: str, livecrawl: str = "preferred") -> dict[str, Any]:
+    """Extract content from a URL using the Exa API.
+
+    Requires the exa-py package and EXA_API_KEY environment variable.
+
+    Args:
+        url: The URL to extract content from
+        livecrawl: Livecrawl mode ("preferred", "always", "never", "fallback")
+
+    Returns:
+        Dict with keys: title, author, description, published, content,
+        site, domain, wordCount
+
+    Raises:
+        ExaError: On any failure (missing deps, missing key, API error)
+    """
+    try:
+        from exa_py import Exa  # type: ignore[import-untyped]
+    except ImportError:
+        raise ExaError("exa-py is not installed. Run: uv sync --extra exa")
+
+    api_key = os.environ.get("EXA_API_KEY")
+    if not api_key:
+        raise ExaError("EXA_API_KEY environment variable is not set")
+
+    try:
+        exa = Exa(api_key=api_key)
+        response = exa.get_contents(
+            [url],
+            text=True,
+            livecrawl=livecrawl,
+            livecrawl_timeout=10000,
+        )
+    except Exception as e:
+        raise ExaError(f"Exa API request failed: {e}") from e
+
+    if not response.results:
+        raise ExaError(f"Exa returned no results for {url}")
+
+    result = response.results[0]
+    parsed = urlparse(url)
+
+    content = getattr(result, "text", "") or ""
+    content = cleanup_content(content, source_url=url)
+
+    word_count = len(content.split()) if content else 0
+
+    return {
+        "title": getattr(result, "title", None),
+        "author": getattr(result, "author", None),
+        "description": None,
+        "published": getattr(result, "publishedDate", None),
+        "content": content,
+        "site": None,
+        "domain": parsed.netloc,
+        "wordCount": word_count,
+    }
+
+
 def extract_page(
-    url: str, timeout: int = 60, cookies: str | None = None
+    url: str,
+    timeout: int = 60,
+    cookies: str | None = None,
+    exa_fallback: bool = False,
+    exa_min_content_length: int = 100,
+    exa_livecrawl: str = "preferred",
 ) -> dict[str, Any]:
     """Extract content and metadata from a URL using defuddle.
 
@@ -150,6 +222,9 @@ def extract_page(
         url: The URL to extract content from
         timeout: Timeout in seconds
         cookies: Optional Cookie header value for authenticated requests
+        exa_fallback: Whether to try Exa API when defuddle returns insufficient content
+        exa_min_content_length: Minimum content length before triggering fallback
+        exa_livecrawl: Exa livecrawl mode ("preferred", "always", "never", "fallback")
 
     Returns:
         Dict with keys: title, author, description, published, content,
@@ -224,6 +299,26 @@ def extract_page(
         # Clean up content artifacts
         if data.get("content"):
             data["content"] = cleanup_content(data["content"], source_url=url)
+
+        # Exa API fallback for insufficient content
+        content = data.get("content", "")
+        if exa_fallback and len(content) < exa_min_content_length:
+            info(f"Defuddle returned {len(content)} chars (< {exa_min_content_length}), trying Exa...")
+            try:
+                exa_data = extract_page_exa(url, livecrawl=exa_livecrawl)
+                exa_content = exa_data.get("content", "")
+                if len(exa_content) >= exa_min_content_length:
+                    info(f"Exa returned {len(exa_content)} chars")
+                    # Prefer defuddle metadata, use Exa content
+                    for key in ("title", "author", "published"):
+                        if not data.get(key) and exa_data.get(key):
+                            data[key] = exa_data[key]
+                    data["content"] = exa_content
+                    data["wordCount"] = exa_data.get("wordCount", 0)
+                else:
+                    warning(f"Exa also returned insufficient content ({len(exa_content)} chars)")
+            except ExaError as e:
+                warning(f"Exa fallback failed: {e}")
 
         return data
 

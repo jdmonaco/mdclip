@@ -258,7 +258,13 @@ def process_url(
     # Extract content and metadata with spinner
     with create_spinner() as progress:
         progress.add_task(f"Extracting: {url}", total=None)
-        page_data = extract_page(url, cookies=cookie_header)
+        page_data = extract_page(
+            url,
+            cookies=cookie_header,
+            exa_fallback=config.get("exa_fallback", False),
+            exa_min_content_length=config.get("exa_min_content_length", 100),
+            exa_livecrawl=config.get("exa_livecrawl", "preferred"),
+        )
 
     title = page_data.get("title", "Untitled")
     content = page_data.get("content", "")

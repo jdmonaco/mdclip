@@ -1,6 +1,6 @@
 [project]
 name = "mdclip"
-version = "0.3.1"
+version = "0.4.0"
 description = "CLI tool to clip web pages to Markdown with YAML frontmatter"
 readme = "README.md"
 authors = [
@@ -12,6 +12,9 @@ dependencies = [
     "pyyaml>=6.0",
     "rich>=13.0",
 ]
+
+[project.optional-dependencies]
+exa = ["exa-py>=1.0"]
 
 [project.scripts]
 mdclip = "mdclip.cli:main"
