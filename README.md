@@ -52,6 +52,12 @@ pip install -e .
 
 # Or with uv
 uv pip install -e .
+
+# As a uv tool (globally available)
+uv tool install -e .
+
+# With Exa API fallback support (optional)
+uv tool install -e . --with exa-py
 ```
 
 ## Quick Start
@@ -175,7 +181,27 @@ open_in_obsidian: true
 # Rate limiting: seconds between requests to the same domain
 # Set to 0 to disable; override with --rate-limit flag
 rate_limit_seconds: 3.0
+
+# Exa API fallback (requires EXA_API_KEY env var and exa-py)
+# exa_fallback: false
+# exa_min_content_length: 100
+# exa_livecrawl: preferred
 ```
+
+### Exa API Fallback
+
+Some pages (e.g., JavaScript-rendered SPAs) return little or no content via defuddle. When enabled, the [Exa API](https://exa.ai/) provides a fallback extraction path with live-crawling support.
+
+To enable:
+
+1. Install with Exa support: `uv tool install -e . --with exa-py`
+2. Set the `EXA_API_KEY` environment variable
+3. Enable in `~/.mdclip.yml`:
+   ```yaml
+   exa_fallback: true
+   ```
+
+When defuddle returns content shorter than `exa_min_content_length` (default 100 chars), mdclip automatically retries via Exa. Defuddle metadata (title, author, date) is preferred when available; only the content body is replaced. If Exa also fails, a warning is logged and the original result is kept.
 
 ### Templates
 
