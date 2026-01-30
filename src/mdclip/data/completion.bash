@@ -26,29 +26,8 @@ _mdclip_completions() {
     # Flags requiring argument
     case "$prev" in
         -o|--output)
-            # Complete vault-relative directories with trailing slash for navigation
-            compopt -o nospace  # Don't add space, allow continuing into subdirs
-            local IFS=$'\n'
-
-            if [[ "$cur" == /* ]] || [[ "$cur" == ~* ]]; then
-                # Absolute path - expand ~ and complete
-                local search_path="${cur/#\~/$HOME}"
-                COMPREPLY=($(compgen -d -- "$search_path" 2>/dev/null))
-            else
-                # Vault-relative - complete from vault directory
-                local vault=""
-                if [[ -f ~/.mdclip.yml ]]; then
-                    vault=$(awk '/^vault:/ {print $2}' ~/.mdclip.yml 2>/dev/null | tr -d "\"'")
-                    vault="${vault/#\~/$HOME}"
-                fi
-                if [[ -n "$vault" && -d "$vault" ]]; then
-                    COMPREPLY=($(cd "$vault" && compgen -d -- "$cur" 2>/dev/null))
-                else
-                    COMPREPLY=($(compgen -d -- "$cur"))
-                fi
-            fi
-            # Add trailing slash to all directory completions
-            COMPREPLY=("${COMPREPLY[@]/%//}")
+            compopt -o filenames -o nospace
+            mapfile -t COMPREPLY < <(compgen -d -- "$cur")
             return 0
             ;;
         -t|--template)

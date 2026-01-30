@@ -108,7 +108,7 @@ Arguments:
                             If omitted, reads URLs from clipboard.
 
 Options:
-  -o, --output FOLDER       Output folder (relative to vault or absolute)
+  -o, --output FOLDER       Output folder (relative to cwd or absolute; overrides template folder)
   -t, --template NAME       Use named template (bypass pattern matching)
   --tags TAG [TAG...]       Additional tags to include in frontmatter
   --skip-existing           Skip URLs that already have a clipped file

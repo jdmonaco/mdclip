@@ -61,11 +61,33 @@ def check_existing_file(base_path: Path, source_url: str) -> FileExistsResult:
     return FileExistsResult(exists=True, same_source=same_source, path=base_path)
 
 
-def resolve_output_path(folder: str, vault: Path) -> Path:
-    """Resolve output folder path relative to vault.
+def resolve_output_path(folder: str) -> Path:
+    """Resolve explicit -o output folder relative to cwd.
+
+    - Absolute paths: used as-is
+    - Tilde paths: expanded
+    - Relative paths: resolved from cwd
 
     Args:
-        folder: Folder path (relative to vault or absolute)
+        folder: Folder path (relative to cwd or absolute)
+
+    Returns:
+        Resolved Path object (directory will be created if needed)
+    """
+    folder_path = Path(folder).expanduser()
+    output_path = folder_path.resolve()
+
+    # Create directory if it doesn't exist
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    return output_path
+
+
+def resolve_template_folder(folder: str, vault: Path) -> Path:
+    """Resolve template folder path relative to vault (auto-routing).
+
+    Args:
+        folder: Folder path from template config (relative to vault or absolute)
         vault: Base vault path
 
     Returns:

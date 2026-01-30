@@ -40,11 +40,29 @@ from .output import (
     get_unique_filepath,
     open_note,
     resolve_output_path,
+    resolve_template_folder,
     write_note,
 )
 from .ratelimit import DomainRateLimiter
 from .selector import select_section
 from .templates import Template, match_template, render_filename, sanitize_filename, slugify
+
+def shorten_path(path: str) -> str:
+    """Shorten paths for display: $HOME -> ~, OneDrive CloudStorage -> ~/OneDrive."""
+    home = str(Path.home())
+    onedrive_prefix = f"{home}/Library/CloudStorage/OneDrive-"
+    if path.startswith(onedrive_prefix):
+        rest = path[len(onedrive_prefix):]
+        if "/" in rest:
+            _, subpath = rest.split("/", 1)
+            return f"~/OneDrive/{subpath}"
+        return f"~/OneDrive/{rest}"
+    if path.startswith(home + "/"):
+        return "~" + path[len(home):]
+    elif path == home:
+        return "~"
+    return path
+
 
 # Confirmation threshold for batch processing
 URL_CONFIRM_THRESHOLD = 10
@@ -81,7 +99,7 @@ Shell completion:
     parser.add_argument(
         "-o", "--output",
         metavar="FOLDER",
-        help="Output folder (relative to vault or absolute path)",
+        help="Output folder (relative to cwd or absolute path)",
     )
 
     parser.add_argument(
@@ -300,9 +318,17 @@ def process_url(
     full_content = frontmatter + f"# {title}\n\n" + content
 
     # Determine output path
-    folder = args.output or template.folder
     vault = Path(config["vault"]).expanduser()
-    output_folder = resolve_output_path(folder, vault)
+    if args.output:
+        # Explicit -o: cwd-relative
+        output_folder = resolve_output_path(args.output)
+    elif template.folder:
+        # Template auto-routing: vault-relative
+        output_folder = resolve_template_folder(template.folder, vault)
+    else:
+        # No -o, no template folder: cwd
+        output_folder = Path.cwd()
+        output_folder.mkdir(parents=True, exist_ok=True)
 
     # Generate filename
     filename_template = template.filename or "{{title}}"
@@ -343,12 +369,7 @@ def process_url(
             if args.verbose:
                 info("Formatted with mdformat")
 
-    # Print relative path if within vault
-    try:
-        rel_path = filepath.relative_to(vault)
-        success(f"Saved: {rel_path}")
-    except ValueError:
-        success(f"Saved: {filepath}")
+    success(f"Saved: {shorten_path(str(filepath))}")
 
     return filepath
 
