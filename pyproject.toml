@@ -15,15 +15,6 @@ dependencies = [
 
 [project.optional-dependencies]
 exa = ["exa-py>=1.0"]
-
-[project.scripts]
-mdclip = "mdclip.cli:main"
-
-[build-system]
-requires = ["uv_build>=0.9.11,<0.10.0"]
-build-backend = "uv_build"
-
-[dependency-groups]
 dev = [
     "black>=25.11.0",
     "mypy>=1.19.0",
@@ -31,3 +22,10 @@ dev = [
     "pytest-cov>=7.0.0",
     "ruff>=0.14.8",
 ]
+
+[project.scripts]
+mdclip = "mdclip.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.11,<0.10.0"]
+build-backend = "uv_build"
