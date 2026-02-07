@@ -228,7 +228,7 @@ def _open_in_obsidian(rel_path: Path, vault_path: Path) -> bool:
     try:
         # Obsidian expects path without .md extension
         note_path = rel_path.with_suffix("") if rel_path.suffix == ".md" else rel_path
-        encoded_path = quote(str(note_path), safe="/")
+        encoded_path = quote(str(note_path))
         vault_name = get_vault_name(vault_path)
         obsidian_url = f"obsidian://open?vault={quote(vault_name)}&file={encoded_path}"
         subprocess.run(["open", obsidian_url], check=True)
