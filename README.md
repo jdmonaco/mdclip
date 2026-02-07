@@ -13,7 +13,7 @@ A command-line tool that clips web pages to Markdown files with YAML frontmatter
 - **Bookmark section selection**: For large bookmark files, interactively select which folder to process
 - **Skip existing**: Option to skip URLs that already have a clipped file with the same source
 - **Rate limiting**: Configurable delay between requests to the same domain (default 3s) with smart deferred queue
-- **Optional formatting**: Post-process output with mdformat for consistent styling
+- **Optional formatting**: Post-process output with mdfmt or mdformat for consistent styling
 - **Batch processing**: Clip multiple URLs in one command with confirmation for large batches
 - **Shell completion**: Bash completion with `mdclip completion bash --install`
 - **Rich console output**: Colored status messages and progress spinners
@@ -31,7 +31,13 @@ brew install node
 # Or download from https://nodejs.org/
 ```
 
-**mdformat** (optional) - Auto-formats output Markdown:
+**mdfmt** (optional, preferred) - Auto-formats output Markdown via [mdsuite](https://github.com/jdmonaco/mdsuite):
+
+```bash
+uv tool install -e ~/tools/mdsuite
+```
+
+**mdformat** (optional, fallback) - Auto-formats output Markdown:
 
 ```bash
 brew install mdformat
@@ -94,7 +100,7 @@ options:
   -n, --dry-run         Show what would be done without writing files
   -y, --yes             Skip confirmation prompts
   --all-sections        Process all bookmark sections without prompting
-  --no-format           Skip mdformat post-processing
+  --no-format           Skip auto-formatting post-processing
   --no-open             Don't open note after clipping
   --rate-limit SECONDS  Seconds between requests to same domain (default: 3.0, 0 to disable)
   --cookies FILE        Load cookies from Netscape cookies.txt for authenticated requests
@@ -171,7 +177,7 @@ date_format: "%Y-%m-%d"
 # Default output folder (relative to vault)
 default_folder: Inbox/Clips
 
-# Enable mdformat post-processing
+# Enable auto-formatting (mdfmt > mdformat)
 auto_format: false
 
 # Open clipped note after single-URL processing

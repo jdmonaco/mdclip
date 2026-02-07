@@ -46,7 +46,8 @@ filename_date_format: "%Y-%m-%d"
 # Default output folder (relative to vault)
 default_folder: Inbox/Clips
 
-# Auto-format output with mdformat (if installed)
+# Auto-format output with mdfmt or mdformat (first available)
+# mdfmt (from mdsuite) is preferred; falls back to mdformat
 # Disabled by default - set to true to enable
 auto_format: false
 

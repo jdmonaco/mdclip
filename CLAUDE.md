@@ -67,7 +67,7 @@ vault: ~/Documents/Obsidian/Notes
 date_format: "%Y-%m-%d"
 filename_date_format: "%Y-%m-%d"
 default_folder: Inbox/Clips
-auto_format: false       # Enable mdformat post-processing
+auto_format: false       # Enable auto-formatting (mdfmt > mdformat)
 skip_existing: false     # Skip URLs with existing clipped files
 open_in_obsidian: true   # Auto-open notes after clipping
 
@@ -115,7 +115,7 @@ Options:
   -n, --dry-run             Show what would be done without writing files
   -y, --yes                 Skip confirmation prompts
   --all-sections            Process all bookmark sections without prompting
-  --no-format               Skip mdformat post-processing
+  --no-format               Skip auto-formatting post-processing
   --no-open                 Don't open note after clipping
   --vault PATH              Override vault path from config
   --config FILE             Use alternate config file

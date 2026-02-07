@@ -162,33 +162,41 @@ def write_note(path: Path, content: str) -> None:
         raise
 
 
-def check_mdformat_installed() -> bool:
-    """Check if mdformat is available."""
-    return shutil.which("mdformat") is not None
+def detect_formatter() -> str | None:
+    """Detect the best available markdown formatter.
 
-
-def format_markdown(path: Path) -> bool:
-    """Format markdown file using mdformat.
-
-    Args:
-        path: Path to markdown file to format
+    Checks for mdfmt (mdsuite) first, then mdformat.
 
     Returns:
-        True if formatting succeeded, False otherwise.
+        Formatter command name, or None if no formatter is available.
     """
-    if not check_mdformat_installed():
-        return False
+    if shutil.which("mdfmt") is not None:
+        return "mdfmt"
+    if shutil.which("mdformat") is not None:
+        return "mdformat"
+    return None
 
+
+def format_markdown(path: Path, formatter: str) -> str | None:
+    """Format a markdown file using the specified formatter.
+
+    Args:
+        path: Path to markdown file to format.
+        formatter: Formatter command name ("mdfmt" or "mdformat").
+
+    Returns:
+        Formatter name on success, None on failure.
+    """
     try:
         result = subprocess.run(
-            ["mdformat", str(path)],
+            [formatter, str(path)],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        return result.returncode == 0
+        return formatter if result.returncode == 0 else None
     except (subprocess.TimeoutExpired, subprocess.SubprocessError):
-        return False
+        return None
 
 
 def get_vault_name(vault_path: Path) -> str:

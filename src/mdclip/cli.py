@@ -36,6 +36,7 @@ from .inputs import (
 )
 from .output import (
     check_existing_file,
+    detect_formatter,
     format_markdown,
     get_unique_filepath,
     open_note,
@@ -142,7 +143,7 @@ Shell completion:
     parser.add_argument(
         "--no-format",
         action="store_true",
-        help="Skip mdformat post-processing",
+        help="Skip auto-formatting post-processing",
     )
 
     parser.add_argument(
@@ -229,6 +230,7 @@ def process_url(
     url: str,
     config: dict,
     args: argparse.Namespace,
+    formatter: str | None = None,
 ) -> Path | None:
     """Process a single URL and create a note.
 
@@ -364,10 +366,10 @@ def process_url(
     write_note(filepath, full_content)
 
     # Format if enabled
-    if config.get("auto_format") and not args.no_format:
-        if format_markdown(filepath):
-            if args.verbose:
-                info("Formatted with mdformat")
+    if formatter:
+        used = format_markdown(filepath, formatter)
+        if used and args.verbose:
+            info(f"Formatted with {used}")
 
     success(f"Saved: {shorten_path(str(filepath))}")
 
@@ -435,6 +437,13 @@ def main(args: list[str] | None = None) -> int:
         error("defuddle is not installed.")
         info("Run 'npm install' in the mdclip directory.")
         return 1
+
+    # Detect formatter once for the session
+    formatter = None
+    if config.get("auto_format") and not parsed_args.no_format:
+        formatter = detect_formatter()
+        if formatter and parsed_args.verbose:
+            info(f"Formatter: {formatter}")
 
     # Parse inputs to URLs
     urls: list[str] = []
@@ -533,7 +542,7 @@ def main(args: list[str] | None = None) -> int:
                 continue
 
             try:
-                result = process_url(url, config, parsed_args)
+                result = process_url(url, config, parsed_args, formatter=formatter)
                 if rate_limiter:
                     rate_limiter.record_access(url)
                 if result:
