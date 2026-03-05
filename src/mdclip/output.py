@@ -199,10 +199,6 @@ def format_markdown(path: Path, formatter: str) -> str | None:
         return None
 
 
-def get_vault_name(vault_path: Path) -> str:
-    """Extract vault name from vault path (last component)."""
-    return vault_path.resolve().name
-
 
 def open_note(filepath: Path, vault_path: Path) -> bool:
     """Open a note file - in Obsidian if inside vault, otherwise in pager.
@@ -226,11 +222,9 @@ def open_note(filepath: Path, vault_path: Path) -> bool:
 def _open_in_obsidian(rel_path: Path, vault_path: Path) -> bool:
     """Open file in Obsidian using obsidian:// URL scheme."""
     try:
-        # Obsidian expects path without .md extension
-        note_path = rel_path.with_suffix("") if rel_path.suffix == ".md" else rel_path
-        encoded_path = quote(str(note_path))
-        vault_name = get_vault_name(vault_path)
-        obsidian_url = f"obsidian://open?vault={quote(vault_name)}&file={encoded_path}"
+        # Use absolute path parameter for reliable opening of newly created files
+        abs_path = vault_path.resolve() / rel_path
+        obsidian_url = f"obsidian://open?path={quote(str(abs_path), safe='')}"
         subprocess.run(["open", obsidian_url], check=True)
         # Bring Obsidian to foreground via System Events
         subprocess.run(
