@@ -18,6 +18,10 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "exa_fallback": False,
     "exa_min_content_length": 100,
     "exa_livecrawl": "preferred",
+    "auto_cookies": {
+        "enabled": True,
+        "search_dirs": ["~/Downloads"],
+    },
     "default_properties": ["title", "source", "author", "created", "published", "description"],
     "templates": [
         {
@@ -60,6 +64,14 @@ open_in_obsidian: true
 # Prevents aggressive requests; set to 0 to disable
 # Can also be overridden per-run with --rate-limit flag
 rate_limit_seconds: 3.0
+
+# Auto-detect cookie files for authenticated requests
+# Searches for {domain}_cookies.txt or cookies.txt in search_dirs
+# Explicit --cookies flag always takes precedence
+# auto_cookies:
+#   enabled: true
+#   search_dirs:
+#     - ~/Downloads
 
 # Exa API fallback for dynamic pages that defuddle can't extract
 # Requires: EXA_API_KEY env var and `uv sync --extra exa`

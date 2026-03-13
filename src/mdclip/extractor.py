@@ -6,7 +6,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urljoin, urlparse
 
 from .console import info, warning
@@ -149,7 +149,10 @@ def _resolve_relative_links(content: str, source_url: str) -> str:
     return MARKDOWN_LINK_PATTERN.sub(replace_link, content)
 
 
-def extract_page_exa(url: str, livecrawl: str = "preferred") -> dict[str, Any]:
+LivecrawlMode = Literal["always", "fallback", "never", "auto", "preferred"]
+
+
+def extract_page_exa(url: str, livecrawl: LivecrawlMode = "preferred") -> dict[str, Any]:
     """Extract content from a URL using the Exa API.
 
     Requires the exa-py package and EXA_API_KEY environment variable.
@@ -208,13 +211,89 @@ def extract_page_exa(url: str, livecrawl: str = "preferred") -> dict[str, Any]:
     }
 
 
+def _run_defuddle(
+    url: str,
+    timeout: int,
+    cookies: str | None,
+) -> dict[str, Any]:
+    """Run the defuddle Node.js extraction script.
+
+    Args:
+        url: The URL to extract content from
+        timeout: Timeout in seconds
+        cookies: Optional Cookie header value for authenticated requests
+
+    Returns:
+        Parsed extraction data dict
+
+    Raises:
+        DefuddleError: On extraction failure
+    """
+    script_path = get_script_path()
+    if not script_path.exists():
+        raise DefuddleError(f"Extraction script not found: {script_path}")
+
+    env = os.environ.copy()
+    if cookies:
+        env["MDCLIP_COOKIES"] = cookies
+
+    try:
+        result = subprocess.run(
+            ["node", str(script_path), url],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        raise DefuddleError(f"Timeout extracting content from {url}") from None
+    except subprocess.SubprocessError as e:
+        raise DefuddleError(f"Failed to run extraction: {e}") from e
+
+    if result.returncode != 0:
+        try:
+            error_data = json.loads(result.stderr)
+            raise DefuddleError(error_data.get("message", "Unknown error"))
+        except json.JSONDecodeError:
+            raise DefuddleError(result.stderr or "Unknown error")
+
+    # Parse the JSON output
+    # defuddle may output debug messages before JSON, so find the JSON line
+    stdout = result.stdout.strip()
+    json_str = None
+    for line in stdout.split("\n"):
+        line = line.strip()
+        if line.startswith("{"):
+            json_str = line
+            break
+
+    if not json_str:
+        raise DefuddleError(f"No JSON found in output: {stdout[:200]}")
+
+    try:
+        data = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        raise DefuddleError(f"Failed to parse output: {e}") from e
+
+    # Ensure we have fallbacks for essential fields
+    if not data.get("title"):
+        parsed = urlparse(url)
+        data["title"] = parsed.netloc or "Untitled"
+
+    # Clean up content artifacts
+    if data.get("content"):
+        data["content"] = cleanup_content(data["content"], source_url=url)
+
+    return data
+
+
 def extract_page(
     url: str,
     timeout: int = 60,
     cookies: str | None = None,
     exa_fallback: bool = False,
     exa_min_content_length: int = 100,
-    exa_livecrawl: str = "preferred",
+    exa_livecrawl: LivecrawlMode = "preferred",
 ) -> dict[str, Any]:
     """Extract content and metadata from a URL using defuddle.
 
@@ -247,82 +326,38 @@ def extract_page(
             "Run 'npm install' in the mdclip directory."
         )
 
-    script_path = get_script_path()
-    if not script_path.exists():
-        raise DefuddleError(f"Extraction script not found: {script_path}")
-
     try:
-        # Set up environment, passing cookies if provided
-        env = os.environ.copy()
-        if cookies:
-            env["MDCLIP_COOKIES"] = cookies
-
-        result = subprocess.run(
-            ["node", str(script_path), url],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            env=env,
-        )
-
-        if result.returncode != 0:
-            # Try to parse error JSON from stderr
+        data = _run_defuddle(url, timeout, cookies)
+    except DefuddleError as defuddle_err:
+        # Defuddle crashed — try Exa as primary source if enabled
+        if exa_fallback:
+            warning(f"Defuddle failed: {defuddle_err}")
+            info("Falling back to Exa API for full extraction...")
             try:
-                error_data = json.loads(result.stderr)
-                raise DefuddleError(error_data.get("message", "Unknown error"))
-            except json.JSONDecodeError:
-                raise DefuddleError(result.stderr or "Unknown error")
+                return extract_page_exa(url, livecrawl=exa_livecrawl)
+            except ExaError as exa_err:
+                warning(f"Exa fallback also failed: {exa_err}")
+                raise defuddle_err from exa_err
+        raise
 
-        # Parse the JSON output
-        # defuddle may output debug messages before JSON, so find the JSON line
-        stdout = result.stdout.strip()
-        json_str = None
-        for line in stdout.split("\n"):
-            line = line.strip()
-            if line.startswith("{"):
-                json_str = line
-                break
-
-        if not json_str:
-            raise DefuddleError(f"No JSON found in output: {stdout[:200]}")
-
+    # Exa API fallback for insufficient content
+    content = data.get("content", "")
+    if exa_fallback and len(content) < exa_min_content_length:
+        info(f"Defuddle returned {len(content)} chars (< {exa_min_content_length}), trying Exa...")
         try:
-            data = json.loads(json_str)
-        except json.JSONDecodeError as e:
-            raise DefuddleError(f"Failed to parse output: {e}") from e
+            exa_data = extract_page_exa(url, livecrawl=exa_livecrawl)
+            exa_content = exa_data.get("content", "")
+            if len(exa_content) >= exa_min_content_length:
+                info(f"Exa returned {len(exa_content)} chars")
+                # Prefer defuddle metadata, use Exa content
+                for key in ("title", "author", "published"):
+                    if not data.get(key) and exa_data.get(key):
+                        data[key] = exa_data[key]
+                data["content"] = exa_content
+                data["wordCount"] = exa_data.get("wordCount", 0)
+            else:
+                warning(f"Exa also returned insufficient content ({len(exa_content)} chars)")
+        except ExaError as e:
+            warning(f"Exa fallback failed: {e}")
 
-        # Ensure we have fallbacks for essential fields
-        if not data.get("title"):
-            parsed = urlparse(url)
-            data["title"] = parsed.netloc or "Untitled"
-
-        # Clean up content artifacts
-        if data.get("content"):
-            data["content"] = cleanup_content(data["content"], source_url=url)
-
-        # Exa API fallback for insufficient content
-        content = data.get("content", "")
-        if exa_fallback and len(content) < exa_min_content_length:
-            info(f"Defuddle returned {len(content)} chars (< {exa_min_content_length}), trying Exa...")
-            try:
-                exa_data = extract_page_exa(url, livecrawl=exa_livecrawl)
-                exa_content = exa_data.get("content", "")
-                if len(exa_content) >= exa_min_content_length:
-                    info(f"Exa returned {len(exa_content)} chars")
-                    # Prefer defuddle metadata, use Exa content
-                    for key in ("title", "author", "published"):
-                        if not data.get(key) and exa_data.get(key):
-                            data[key] = exa_data[key]
-                    data["content"] = exa_content
-                    data["wordCount"] = exa_data.get("wordCount", 0)
-                else:
-                    warning(f"Exa also returned insufficient content ({len(exa_content)} chars)")
-            except ExaError as e:
-                warning(f"Exa fallback failed: {e}")
-
-        return data
-
-    except subprocess.TimeoutExpired:
-        raise DefuddleError(f"Timeout extracting content from {url}") from None
-    except subprocess.SubprocessError as e:
-        raise DefuddleError(f"Failed to run extraction: {e}") from e
+    return data

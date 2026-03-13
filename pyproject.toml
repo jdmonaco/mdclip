@@ -1,6 +1,6 @@
 [project]
 name = "mdclip"
-version = "0.5.2"
+version = "0.6.0"
 description = "CLI tool to clip web pages to Markdown with YAML frontmatter"
 readme = "README.md"
 authors = [
@@ -21,6 +21,7 @@ dev = [
     "pytest>=9.0.1",
     "pytest-cov>=7.0.0",
     "ruff>=0.14.8",
+    "types-pyyaml>=6.0",
 ]
 
 [project.scripts]

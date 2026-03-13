@@ -15,7 +15,12 @@ from .config import (
     merge_config,
 )
 from .console import confirm, console, create_spinner, error, info, success, warning
-from .cookies import filter_cookies_for_url, format_cookie_header, load_cookies_from_file
+from .cookies import (
+    filter_cookies_for_url,
+    find_cookies_for_url,
+    format_cookie_header,
+    load_cookies_from_file,
+)
 from .extractor import (
     DefuddleError,
     DefuddleNotInstalledError,
@@ -261,7 +266,7 @@ def process_url(
         info(f"[dry-run] Would process: {url}")
         return None
 
-    # Load cookies if provided
+    # Load cookies if provided or auto-detect
     cookie_header = None
     if args.cookies:
         cookies_path = Path(args.cookies).expanduser()
@@ -274,6 +279,21 @@ def process_url(
             cookie_header = format_cookie_header(url_cookies)
             if args.verbose:
                 info(f"Using {len(url_cookies)} cookies for {urlparse(url).netloc}")
+    else:
+        auto_cookies_cfg = config.get("auto_cookies", {})
+        if auto_cookies_cfg.get("enabled", True):
+            search_dirs = [
+                Path(d).expanduser()
+                for d in auto_cookies_cfg.get("search_dirs", ["~/Downloads"])
+            ]
+            found = find_cookies_for_url(url, search_dirs)
+            if found:
+                all_cookies = load_cookies_from_file(found)
+                url_cookies = filter_cookies_for_url(all_cookies, url)
+                if url_cookies:
+                    cookie_header = format_cookie_header(url_cookies)
+                    if args.verbose:
+                        info(f"Auto-detected {len(url_cookies)} cookies from {found.name}")
 
     # Extract content and metadata with spinner
     with create_spinner() as progress:
@@ -563,7 +583,7 @@ def main(args: list[str] | None = None) -> int:
                     traceback.print_exc()
 
         # Emit aggregated deferral message for this batch
-        if deferred_this_batch:
+        if deferred_this_batch and rate_limiter:
             domains = sorted(set(rate_limiter.get_domain(u) for u in deferred_this_batch))
             info(f"Deferred {len(deferred_this_batch)} URL(s) ({', '.join(domains)})")
 

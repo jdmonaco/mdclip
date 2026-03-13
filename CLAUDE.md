@@ -161,6 +161,12 @@ Options:
 - For files outside vault, opens in `glow -p` or `less` as fallback
 - `--no-open` flag or `open_in_obsidian: false` disables this
 
+### Cookie Auto-Detection
+- When `--cookies` is not provided, auto-detects cookie files in `~/Downloads`
+- Searches for `{domain}_cookies.txt` (e.g., `www.wired.com_cookies.txt`), then `cookies.txt`, then broad glob fallback
+- Explicit `--cookies` flag always takes precedence
+- Configurable via `auto_cookies` in `~/.mdclip.yml` (enabled by default)
+
 ### Template Matching
 1. Iterate templates in order
 2. For each template, check each trigger pattern against URL
