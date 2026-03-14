@@ -33,10 +33,11 @@ The tool processes URLs through a template system where URL patterns determine:
 ```
 mdclip/
 ├── src/mdclip/
-│   ├── __init__.py         # Package version
+│   ├── __init__.py         # Package version (single source of truth)
 │   ├── cli.py              # Argument parsing, main entry point
+│   ├── cli_common.py       # ExitCode, OperationResult, output_result
 │   ├── config.py           # Configuration loading, defaults, auto-init
-│   ├── console.py          # Rich console output helpers
+│   ├── console.py          # Rich console output helpers (quiet-aware)
 │   ├── extractor.py        # defuddle wrapper, content extraction
 │   ├── frontmatter.py      # YAML frontmatter generation
 │   ├── inputs.py           # URL/clipboard/bookmark parsing
@@ -110,16 +111,19 @@ Arguments:
 Options:
   -o, --output FOLDER       Output folder (relative to cwd or absolute; overrides template folder)
   -t, --template NAME       Use named template (bypass pattern matching)
-  --tags TAG [TAG...]       Additional tags to include in frontmatter
-  --skip-existing           Skip URLs that already have a clipped file
+  --tags TAGS               Additional tags, comma-separated (e.g., --tags foo,bar,baz)
+  --force                   Force re-download even if file with same source URL exists
   -n, --dry-run             Show what would be done without writing files
   -y, --yes                 Skip confirmation prompts
   --all-sections            Process all bookmark sections without prompting
   --no-format               Skip auto-formatting post-processing
   --no-open                 Don't open note after clipping
+  --rate-limit SECONDS      Seconds between requests to same domain (default: 3.0, 0 to disable)
+  --cookies FILE            Load cookies from Netscape cookies.txt file
   --vault PATH              Override vault path from config
   --config FILE             Use alternate config file
   --list-templates          List configured templates and exit
+  --json                    Output results as JSON to stdout
   --verbose                 Show detailed output
   --version                 Show version
   -h, --help                Show help
@@ -214,6 +218,56 @@ Uses Rich library for colored output to stderr:
 - `error()` - Red ✗ for errors
 - `create_spinner()` - Progress spinner during extraction
 
+## JSON Output
+
+The `--json` flag outputs structured results to stdout following the OperationResult pattern from SPEC.md. When enabled, Rich console output is suppressed, prompts are auto-confirmed, and Obsidian open is skipped.
+
+```bash
+# Single URL
+mdclip --json "https://example.com" | jq '.data.results[0].data.path'
+
+# Batch with jq filtering
+mdclip --json urls.txt | jq '.data.results[] | select(.success) | .data.title'
+
+# List templates as JSON
+mdclip --json --list-templates | jq '.data.templates[].name'
+```
+
+Output structure:
+
+```json
+{
+  "success": true,
+  "message": "Processed 1/1 URL(s)",
+  "data": {
+    "total": 1,
+    "processed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "results": [
+      {
+        "success": true,
+        "message": "Saved: ~/Matrix/Capture/Page Title.md",
+        "data": {
+          "url": "https://example.com",
+          "title": "Page Title",
+          "template": "default",
+          "path": "/absolute/path/to/Page Title.md",
+          "folder": "/absolute/path/to/folder",
+          "filename": "Page Title.md",
+          "author": null,
+          "description": "...",
+          "published": null,
+          "formatted": null
+        },
+        "errors": null
+      }
+    ]
+  },
+  "errors": null
+}
+```
+
 ## Error Handling
 
 - **Node.js not installed**: Clear error with install instructions
@@ -279,8 +333,11 @@ mdclip links.md
 # From URL list file
 mdclip urls.txt
 
-# Skip URLs that already have clipped files
-mdclip --skip-existing urls.txt
+# Force re-download even if file exists with same source
+mdclip --force urls.txt
+
+# JSON output for scripting
+mdclip --json "https://example.com"
 
 # Override output location
 mdclip -o "Projects/Research" "https://example.com/article"
