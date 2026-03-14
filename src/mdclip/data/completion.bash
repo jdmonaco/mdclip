@@ -50,7 +50,7 @@ _mdclip_completions() {
 
     # Flag completion
     if [[ "$cur" == -* ]]; then
-        local opts="-o --output -t --template --tags --force -n --dry-run -y --yes --all-sections --no-format --no-open --rate-limit --cookies --vault --config --list-templates --verbose --version -h --help"
+        local opts="-o --output -t --template --tags --force -n --dry-run -y --yes --all-sections --no-format --no-open --rate-limit --cookies --vault --config --list-templates --json --verbose --version -h --help"
         COMPREPLY=($(compgen -W "$opts" -- "$cur"))
         return 0
     fi

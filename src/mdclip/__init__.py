@@ -1,3 +1,3 @@
 """mdclip - CLI tool to clip web pages to Markdown with YAML frontmatter."""
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"

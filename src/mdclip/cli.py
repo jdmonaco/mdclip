@@ -16,7 +16,8 @@ from .config import (
     load_config,
     merge_config,
 )
-from .console import confirm, console, create_spinner, error, info, success, warning
+from .cli_common import ExitCode, OperationResult
+from .console import confirm, console, create_spinner, error, info, set_quiet, success, warning
 from .cookies import (
     filter_cookies_for_url,
     find_cookies_for_url,
@@ -251,6 +252,13 @@ Shell completion:
     )
 
     parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Output results as JSON to stdout",
+    )
+
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Show detailed output",
@@ -296,16 +304,17 @@ def process_url(
     config: dict,
     args: argparse.Namespace,
     formatter: str | None = None,
-) -> Path | None:
+) -> OperationResult:
     """Process a single URL and create a note.
 
     Args:
         url: The URL to process
         config: Configuration dictionary
         args: Parsed CLI arguments
+        formatter: Markdown formatter command name
 
     Returns:
-        Path to created file, or None if dry-run
+        OperationResult with file path and metadata in data dict
     """
     # Match template
     if args.template:
@@ -324,7 +333,11 @@ def process_url(
 
     if args.dry_run:
         info(f"[dry-run] Would process: {url}")
-        return None
+        return OperationResult(
+            success=True,
+            message=f"[dry-run] Would process: {url}",
+            data={"url": url, "template": template.name, "dry_run": True},
+        )
 
     # Load cookies if provided or auto-detect
     cookie_header = None
@@ -332,7 +345,11 @@ def process_url(
         cookies_path = Path(args.cookies).expanduser()
         if not cookies_path.exists():
             error(f"Cookies file not found: {cookies_path}")
-            return None
+            return OperationResult(
+                success=False,
+                message=f"Cookies file not found: {cookies_path}",
+                errors=[f"Cookies file not found: {cookies_path}"],
+            )
         all_cookies = load_cookies_from_file(cookies_path)
         url_cookies = filter_cookies_for_url(all_cookies, url)
         if url_cookies:
@@ -374,7 +391,12 @@ def process_url(
 
     if not content:
         warning(f"No content extracted from {url}, skipping")
-        return None
+        return OperationResult(
+            success=False,
+            message=f"No content extracted from {url}",
+            data={"url": url, "title": title},
+            errors=[f"No content extracted from {url}"],
+        )
 
     # Build metadata from extracted data
     metadata = {
@@ -433,7 +455,12 @@ def process_url(
             if skip_existing:
                 # Skip this URL - file already exists with same source
                 info(f"Skipped (exists): {filename}")
-                return None
+                return OperationResult(
+                    success=True,
+                    message=f"Skipped (exists): {filename}",
+                    data={"url": url, "title": title, "skipped": True,
+                           "path": str(base_path)},
+                )
             # Same source but not skipping - use unique filename
             filepath = get_unique_filepath(base_path)
         else:
@@ -446,14 +473,32 @@ def process_url(
     write_note(filepath, full_content)
 
     # Format if enabled
+    formatted_with = None
     if formatter:
         used = format_markdown(filepath, formatter)
-        if used and args.verbose:
-            info(f"Formatted with {used}")
+        if used:
+            formatted_with = used
+            if args.verbose:
+                info(f"Formatted with {used}")
 
     success(f"Saved: {shorten_path(str(filepath))}")
 
-    return filepath
+    return OperationResult(
+        success=True,
+        message=f"Saved: {shorten_path(str(filepath))}",
+        data={
+            "url": url,
+            "title": title,
+            "template": template.name,
+            "path": str(filepath),
+            "folder": str(output_folder),
+            "filename": filepath.name,
+            "author": metadata.get("author"),
+            "description": metadata.get("description"),
+            "published": metadata.get("published"),
+            "formatted": formatted_with,
+        },
+    )
 
 
 def main(args: list[str] | None = None) -> int:
@@ -473,6 +518,13 @@ def main(args: list[str] | None = None) -> int:
         return completion_command(args[1:])
 
     parsed_args = parse_args(args)
+    json_mode = parsed_args.json_output
+
+    # Suppress Rich console output in JSON mode; auto-confirm prompts
+    if json_mode:
+        set_quiet(True)
+        parsed_args.yes = True
+        parsed_args.no_open = True
 
     # Load configuration (auto-creates if missing)
     config_path = Path(parsed_args.config) if parsed_args.config else None
@@ -482,8 +534,16 @@ def main(args: list[str] | None = None) -> int:
             info(f"Created config file: {get_config_path()}")
             info("Edit this file to customize vault path and templates.")
     except Exception as e:
-        error(f"Error loading config: {e}")
-        return 1
+        if json_mode:
+            from .cli_common import output_result
+            output_result(OperationResult(
+                success=False,
+                message=f"Error loading config: {e}",
+                errors=[str(e)],
+            ), json_mode=True)
+        else:
+            error(f"Error loading config: {e}")
+        return ExitCode.ERROR
 
     # Apply CLI overrides
     overrides = {}
@@ -494,8 +554,17 @@ def main(args: list[str] | None = None) -> int:
 
     # Handle --list-templates
     if parsed_args.list_templates:
-        list_templates(config)
-        return 0
+        if json_mode:
+            templates = config.get("templates", [])
+            from .cli_common import output_result
+            output_result(OperationResult(
+                success=True,
+                message=f"{len(templates)} template(s)",
+                data={"templates": templates},
+            ), json_mode=True)
+        else:
+            list_templates(config)
+        return ExitCode.SUCCESS
 
     # Check for inputs - try clipboard if none provided
     from_clipboard = False
@@ -505,19 +574,43 @@ def main(args: list[str] | None = None) -> int:
             from_clipboard = True
             parsed_args.input = clipboard_urls
         else:
-            error("No input provided and clipboard empty. Use -h for help.")
-            return 1
+            if json_mode:
+                from .cli_common import output_result
+                output_result(OperationResult(
+                    success=False,
+                    message="No input provided and clipboard empty",
+                    errors=["No input provided and clipboard empty"],
+                ), json_mode=True)
+            else:
+                error("No input provided and clipboard empty. Use -h for help.")
+            return ExitCode.ERROR
 
     # Check Node.js and defuddle are installed
     if not check_node_installed():
-        error("Node.js is not installed.")
-        info("Install from: https://nodejs.org/")
-        return 1
+        if json_mode:
+            from .cli_common import output_result
+            output_result(OperationResult(
+                success=False,
+                message="Node.js is not installed",
+                errors=["Node.js is not installed"],
+            ), json_mode=True)
+        else:
+            error("Node.js is not installed.")
+            info("Install from: https://nodejs.org/")
+        return ExitCode.ERROR
 
     if not check_defuddle_installed():
-        error("defuddle is not installed.")
-        info("Run 'npm install' in the mdclip directory.")
-        return 1
+        if json_mode:
+            from .cli_common import output_result
+            output_result(OperationResult(
+                success=False,
+                message="defuddle is not installed",
+                errors=["defuddle is not installed. Run 'npm install' in the mdclip directory."],
+            ), json_mode=True)
+        else:
+            error("defuddle is not installed.")
+            info("Run 'npm install' in the mdclip directory.")
+        return ExitCode.ERROR
 
     # Detect formatter once for the session
     formatter = None
@@ -542,8 +635,16 @@ def main(args: list[str] | None = None) -> int:
         urls.extend(parsed_urls)
 
     if not urls:
-        error("No valid URLs found in input")
-        return 1
+        if json_mode:
+            from .cli_common import output_result
+            output_result(OperationResult(
+                success=False,
+                message="No valid URLs found in input",
+                errors=["No valid URLs found in input"],
+            ), json_mode=True)
+        else:
+            error("No valid URLs found in input")
+        return ExitCode.ERROR
 
     # Bookmark section selection for large bookmark files
     if (
@@ -578,13 +679,13 @@ def main(args: list[str] | None = None) -> int:
     if from_clipboard and not parsed_args.yes:
         if not preview_clipboard_urls(urls, config, parsed_args):
             info("Aborted.")
-            return 0
+            return ExitCode.SUCCESS
 
     # Confirm before processing many URLs (non-clipboard input only)
     if not from_clipboard and len(urls) > URL_CONFIRM_THRESHOLD and not parsed_args.yes:
         if not confirm(f"Process {len(urls)} URLs?"):
             info("Aborted.")
-            return 0
+            return ExitCode.SUCCESS
 
     # Initialize rate limiter
     rate_limit = parsed_args.rate_limit
@@ -593,7 +694,8 @@ def main(args: list[str] | None = None) -> int:
     rate_limiter = DomainRateLimiter(delay_seconds=rate_limit) if rate_limit > 0 else None
 
     # Process URLs with rate limiting
-    processed_count = 0
+    results: list[OperationResult] = []
+    errors_list: list[str] = []
     last_filepath: Path | None = None
     pending = list(urls)
 
@@ -632,20 +734,31 @@ def main(args: list[str] | None = None) -> int:
                 result = process_url(url, config, parsed_args, formatter=formatter)
                 if rate_limiter:
                     rate_limiter.record_access(url)
-                if result:
-                    last_filepath = result
-                    processed_count += 1
-                elif parsed_args.dry_run:
-                    processed_count += 1
+                results.append(result)
+                if result.success and result.data and result.data.get("path"):
+                    last_filepath = Path(result.data["path"])
             except (NodeNotInstalledError, DefuddleNotInstalledError) as e:
                 error(str(e))
-                return 1
+                if json_mode:
+                    errors_list.append(str(e))
+                else:
+                    return ExitCode.ERROR
             except DefuddleError as e:
-                error(f"Processing {url}: {e}")
+                msg = f"Processing {url}: {e}"
+                error(msg)
+                errors_list.append(msg)
+                results.append(OperationResult(
+                    success=False, message=msg, data={"url": url}, errors=[msg],
+                ))
                 if parsed_args.verbose:
                     traceback.print_exc()
             except Exception as e:
-                error(f"Processing {url}: {e}")
+                msg = f"Processing {url}: {e}"
+                error(msg)
+                errors_list.append(msg)
+                results.append(OperationResult(
+                    success=False, message=msg, data={"url": url}, errors=[msg],
+                ))
                 if parsed_args.verbose:
                     traceback.print_exc()
 
@@ -653,6 +766,35 @@ def main(args: list[str] | None = None) -> int:
         if deferred_this_batch and rate_limiter:
             domains = sorted(set(rate_limiter.get_domain(u) for u in deferred_this_batch))
             info(f"Deferred {len(deferred_this_batch)} URL(s) ({', '.join(domains)})")
+
+    # Compute stats
+    processed_count = sum(
+        1 for r in results
+        if r.success and not (r.data and r.data.get("skipped"))
+    )
+
+    # JSON output: emit structured result
+    if json_mode:
+        from .cli_common import output_result
+        items = [r.to_dict() for r in results]
+        all_errors = errors_list[:]
+        for r in results:
+            if r.errors:
+                all_errors.extend(r.errors)
+        overall = OperationResult(
+            success=processed_count > 0,
+            message=f"Processed {processed_count}/{len(urls)} URL(s)",
+            data={
+                "total": len(urls),
+                "processed": processed_count,
+                "skipped": sum(1 for r in results if r.data and r.data.get("skipped")),
+                "errors": len([r for r in results if not r.success]),
+                "results": items,
+            },
+            errors=all_errors if all_errors else None,
+        )
+        output_result(overall, json_mode=True)
+        return ExitCode.SUCCESS if processed_count > 0 else ExitCode.ERROR
 
     # Open note after single-URL success
     if len(urls) == 1 and processed_count == 1 and last_filepath:
@@ -668,7 +810,7 @@ def main(args: list[str] | None = None) -> int:
         else:
             warning(f"Processed {processed_count}/{len(urls)} URLs")
 
-    return 0 if processed_count > 0 else 1
+    return ExitCode.SUCCESS if processed_count > 0 else ExitCode.ERROR
 
 
 if __name__ == "__main__":

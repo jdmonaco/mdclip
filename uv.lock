@@ -578,7 +578,6 @@ wheels = [
 
 [[package]]
 name = "mdclip"
-version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -612,7 +611,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.8" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
 ]
-provides-extras = ["exa", "dev"]
+provides-extras = ["dev", "exa"]
 
 [[package]]
 name = "mdurl"
