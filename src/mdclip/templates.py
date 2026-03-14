@@ -20,7 +20,7 @@ class Template:
     """A template for processing URLs."""
 
     name: str
-    folder: str = "Inbox/Clips"
+    folder: str = "Capture"
     tags: list[str] = field(default_factory=lambda: ["webclip"])
     filename: str = "{{title}}"
     triggers: list[str] = field(default_factory=list)
@@ -31,7 +31,7 @@ class Template:
         """Create a Template from a dictionary."""
         return cls(
             name=data.get("name", "default"),
-            folder=data.get("folder", "Inbox/Clips"),
+            folder=data.get("folder", "Capture"),
             tags=data.get("tags", ["webclip"]),
             filename=data.get("filename", "{{title}}"),
             triggers=data.get("triggers", []),

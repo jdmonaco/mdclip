@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
+from rich.table import Table
+
 from . import __version__
 from .config import (
     get_config_path,
@@ -68,6 +70,64 @@ def shorten_path(path: str) -> str:
     elif path == home:
         return "~"
     return path
+
+
+def preview_clipboard_urls(
+    urls: list[str],
+    config: dict,
+    args: argparse.Namespace,
+) -> bool:
+    """Preview clipboard URLs with template matching before processing.
+
+    For a single URL, prints a one-line summary. For multiple URLs, displays
+    a Rich table with domain, template, and folder columns, then prompts
+    for confirmation.
+
+    Returns:
+        True to proceed, False to abort.
+    """
+    vault = Path(config.get("vault", "")).expanduser()
+    templates = config.get("templates", [])
+
+    def _resolve_template(url: str) -> Template:
+        if args.template:
+            tdict = get_template_by_name(args.template, config)
+            if tdict:
+                return Template.from_dict(tdict)
+        return match_template(url, templates)
+
+    def _resolve_folder(template: Template) -> str:
+        if args.output:
+            return args.output
+        if template.folder:
+            return shorten_path(str(resolve_template_folder(template.folder, vault)))
+        return "."
+
+    def _domain(url: str) -> str:
+        host = urlparse(url).netloc
+        return host.removeprefix("www.")
+
+    if len(urls) == 1:
+        t = _resolve_template(urls[0])
+        info(f"Clipboard: {_domain(urls[0])} → {t.name} ({_resolve_folder(t)})")
+        return True
+
+    table = Table(title="Clipboard URLs")
+    table.add_column("#", justify="right", style="dim")
+    table.add_column("Domain")
+    table.add_column("Template", style="cyan")
+    table.add_column("Folder")
+
+    for i, url in enumerate(urls, 1):
+        t = _resolve_template(url)
+        table.add_row(str(i), _domain(url), t.name, _resolve_folder(t))
+
+    console.print(table)
+
+    if args.dry_run:
+        return True
+
+    return confirm(f"Process {len(urls)} URLs?", default=True)
 
 
 # Confirmation threshold for batch processing
@@ -215,7 +275,7 @@ def list_templates(config: dict) -> None:
     console.print("[bold]Configured templates:[/bold]\n")
     for t in templates:
         name = t.get("name", "unnamed")
-        folder = t.get("folder", "Inbox/Clips")
+        folder = t.get("folder", "Capture")
         triggers = t.get("triggers", [])
         tags = t.get("tags", [])
 
@@ -438,10 +498,11 @@ def main(args: list[str] | None = None) -> int:
         return 0
 
     # Check for inputs - try clipboard if none provided
+    from_clipboard = False
     if not parsed_args.input:
         clipboard_urls = read_clipboard_urls()
         if clipboard_urls:
-            info(f"Reading {len(clipboard_urls)} URL(s) from clipboard")
+            from_clipboard = True
             parsed_args.input = clipboard_urls
         else:
             error("No input provided and clipboard empty. Use -h for help.")
@@ -513,8 +574,14 @@ def main(args: list[str] | None = None) -> int:
     if parsed_args.verbose:
         info(f"Found {len(urls)} URL(s) to process")
 
-    # Confirm before processing many URLs
-    if len(urls) > URL_CONFIRM_THRESHOLD and not parsed_args.yes:
+    # Preview clipboard URLs with template matching
+    if from_clipboard and not parsed_args.yes:
+        if not preview_clipboard_urls(urls, config, parsed_args):
+            info("Aborted.")
+            return 0
+
+    # Confirm before processing many URLs (non-clipboard input only)
+    if not from_clipboard and len(urls) > URL_CONFIRM_THRESHOLD and not parsed_args.yes:
         if not confirm(f"Process {len(urls)} URLs?"):
             info("Aborted.")
             return 0

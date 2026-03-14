@@ -175,7 +175,7 @@ vault: ~/Documents/Obsidian/Notes
 date_format: "%Y-%m-%d"
 
 # Default output folder (relative to vault)
-default_folder: Inbox/Clips
+default_folder: Capture
 
 # Enable auto-formatting (mdfmt > mdformat)
 auto_format: false
@@ -227,7 +227,7 @@ templates:
       type: repository
 
   - name: default
-    folder: Inbox/Clips
+    folder: Capture
     tags:
       - webclip
     filename: "{{title}}"

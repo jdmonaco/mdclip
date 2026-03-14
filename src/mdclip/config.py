@@ -11,7 +11,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "vault": "~/Documents/Obsidian/Notes",
     "date_format": "%Y-%m-%d",
     "filename_date_format": "%Y-%m-%d",
-    "default_folder": "Inbox/Clips",
+    "default_folder": "Capture",
     "auto_format": False,
     "open_in_obsidian": True,
     "rate_limit_seconds": 3.0,
@@ -26,7 +26,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "templates": [
         {
             "name": "default",
-            "folder": "Inbox/Clips",
+            "folder": "Capture",
             "tags": ["webclip"],
             "filename": "{{title}}",
         }
@@ -48,7 +48,7 @@ date_format: "%Y-%m-%d"
 filename_date_format: "%Y-%m-%d"
 
 # Default output folder (relative to vault)
-default_folder: Inbox/Clips
+default_folder: Capture
 
 # Auto-format output with mdfmt or mdformat (first available)
 # mdfmt (from mdsuite) is preferred; falls back to mdformat
@@ -160,7 +160,7 @@ templates:
 
   # Default template (required - catches unmatched URLs)
   - name: default
-    folder: Inbox/Clips
+    folder: Capture
     tags: [webclip]
 """
 

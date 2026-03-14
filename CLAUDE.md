@@ -66,7 +66,7 @@ Auto-created with defaults on first run.
 vault: ~/Documents/Obsidian/Notes
 date_format: "%Y-%m-%d"
 filename_date_format: "%Y-%m-%d"
-default_folder: Inbox/Clips
+default_folder: Capture
 auto_format: false       # Enable auto-formatting (mdfmt > mdformat)
 skip_existing: false     # Skip URLs with existing clipped files
 open_in_obsidian: true   # Auto-open notes after clipping
@@ -93,7 +93,7 @@ templates:
       type: repository
 
   - name: default  # Fallback template (required)
-    folder: Inbox/Clips
+    folder: Capture
     tags: [webclip]
     filename: "{{title}}"
 ```
