@@ -48,16 +48,16 @@ _mdclip_completions() {
             ;;
     esac
 
-    # Flag completion
+    # Flag and first-position completion
+    local opts="-o --output -t --template --tags --force -n --dry-run -y --yes --all-sections --no-format --no-open --rate-limit --cookies --vault --config --list-templates --json --verbose --version -h --help"
     if [[ "$cur" == -* ]]; then
-        local opts="-o --output -t --template --tags --force -n --dry-run -y --yes --all-sections --no-format --no-open --rate-limit --cookies --vault --config --list-templates --json --verbose --version -h --help"
         COMPREPLY=($(compgen -W "$opts" -- "$cur"))
         return 0
     fi
 
-    # Positional args: file completion, plus 'completion' subcommand if it matches
-    if [[ "$COMP_CWORD" -eq 1 ]] && [[ "completion" == "$cur"* ]]; then
-        COMPREPLY=("completion")
+    # First position: show options and 'completion' subcommand
+    if [[ "$COMP_CWORD" -eq 1 ]]; then
+        COMPREPLY=($(compgen -W "$opts completion" -- "$cur"))
         return 0
     fi
 
