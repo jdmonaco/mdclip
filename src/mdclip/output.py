@@ -3,6 +3,7 @@
 import re
 import shutil
 import subprocess
+import time
 import tempfile
 from pathlib import Path
 from typing import NamedTuple
@@ -219,21 +220,40 @@ def open_note(filepath: Path, vault_path: Path) -> bool:
         return _open_in_pager(filepath)
 
 
+# Seconds to let Obsidian's file watcher index a freshly written note before
+# the direct-URI fallback fires. Only used when `obz` is not on PATH; obz
+# applies its own configurable settle wait.
+OBSIDIAN_SETTLE_SECONDS = 3.0
+
+
 def _open_in_obsidian(rel_path: Path, vault_path: Path) -> bool:
-    """Open file in Obsidian using obsidian:// URL scheme."""
+    """Open a vault file in Obsidian, via `obz open --path` when available.
+
+    Obsidian indexes new files asynchronously. An `obsidian://open` URI sent
+    before its watcher has registered the file raises a "file not found"
+    dialog even though the file is on disk. obz waits for the watcher to
+    settle before sending the URI, so it is preferred; the direct-URI
+    fallback sleeps a fixed interval instead.
+    """
+    abs_path = vault_path.resolve() / rel_path
+
+    obz = shutil.which("obz")
+    if obz:
+        try:
+            result = subprocess.run(
+                [obz, "open", "--path", str(abs_path)],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+            return False
+
     try:
-        # Use absolute path parameter for reliable opening of newly created files
-        abs_path = vault_path.resolve() / rel_path
+        time.sleep(OBSIDIAN_SETTLE_SECONDS)
         obsidian_url = f"obsidian://open?path={quote(str(abs_path), safe='')}"
         subprocess.run(["open", obsidian_url], check=True)
-        # Bring Obsidian to foreground via System Events
-        subprocess.run(
-            [
-                "osascript", "-e",
-                'tell application "System Events" to set frontmost of process "Obsidian" to true',
-            ],
-            check=False,
-        )
         return True
     except subprocess.SubprocessError:
         return False

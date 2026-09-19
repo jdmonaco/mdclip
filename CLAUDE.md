@@ -161,8 +161,9 @@ Options:
 
 ### Obsidian Integration
 - After clipping a single URL, auto-opens the note in Obsidian
-- Uses `obsidian://open` URL scheme with vault name and file path
-- Brings Obsidian to foreground via System Events
+- Delegates to `obz open --path` when `obz` is on PATH; obz waits for Obsidian's file watcher to index the new note before sending the URI (without the wait Obsidian raises a "file not found" dialog for a note written moments earlier)
+- Without obz, falls back to a direct `obsidian://open?path=` URI after a fixed settle delay (`OBSIDIAN_SETTLE_SECONDS` in `output.py`)
+- No foreground activation step: Obsidian brings its own window forward on every URI
 - For files outside vault, opens in `glow -p` or `less` as fallback
 - `--no-open` flag or `open_in_obsidian: false` disables this
 
