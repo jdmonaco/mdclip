@@ -11,6 +11,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "vault": "~/Documents/Obsidian/Notes",
     "date_format": "%Y-%m-%d",
     "filename_date_format": "%Y-%m-%d",
+    "default_filename": "{{title}} {{published}}",
     "default_folder": "Capture",
     "auto_format": False,
     "open_in_obsidian": True,
@@ -44,8 +45,13 @@ vault: ~/Documents/Obsidian/Notes
 # Date format for frontmatter 'created' field (can be customized, e.g., "%Y-%m-%d %H:%M")
 date_format: "%Y-%m-%d"
 
-# Date format for filename templates
+# Date format for the {{date}} and {{published}} filename variables
 filename_date_format: "%Y-%m-%d"
+
+# Default filename template, used by any template without its own 'filename' key
+# Variables: {{title}}, {{published}} (published date, falls back to clip date),
+# {{date}} (clip date), {{slug}}, {{domain}}
+default_filename: "{{title}} {{published}}"
 
 # Default output folder (relative to vault)
 default_folder: Capture

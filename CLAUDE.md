@@ -67,6 +67,7 @@ Auto-created with defaults on first run.
 vault: ~/Documents/Obsidian/Notes
 date_format: "%Y-%m-%d"
 filename_date_format: "%Y-%m-%d"
+default_filename: "{{title}} {{published}}"  # Used by templates without a filename key
 default_folder: Capture
 auto_format: false       # Enable auto-formatting (mdfmt > mdformat)
 skip_existing: false     # Skip URLs with existing clipped files
@@ -180,7 +181,9 @@ Options:
 6. Fall back to `default` template if no match
 
 ### Filename Generation
-- Template variables: `{{title}}`, `{{date}}`, `{{slug}}`, `{{domain}}`
+- Template `filename` key overrides config-wide `default_filename` (default `{{title}} {{published}}`)
+- Template variables: `{{title}}`, `{{published}}`, `{{date}}`, `{{slug}}`, `{{domain}}`
+- `{{published}}` = page's published date, falling back to the clip date; `{{date}}` = clip date; both formatted per `filename_date_format`
 - Sanitization: Remove `< > : " / \ | ? *`, collapse whitespace
 - Length limit: 100 characters
 - Duplicate handling: Append ` (1)`, ` (2)`, etc.

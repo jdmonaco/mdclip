@@ -22,7 +22,7 @@ class Template:
     name: str
     folder: str = "Capture"
     tags: list[str] = field(default_factory=lambda: ["webclip"])
-    filename: str = "{{title}}"
+    filename: str | None = None  # None: use config default_filename
     triggers: list[str] = field(default_factory=list)
     properties: dict[str, Any] = field(default_factory=dict)
 
@@ -33,7 +33,7 @@ class Template:
             name=data.get("name", "default"),
             folder=data.get("folder", "Capture"),
             tags=data.get("tags", ["webclip"]),
-            filename=data.get("filename", "{{title}}"),
+            filename=data.get("filename"),
             triggers=data.get("triggers", []),
             properties=data.get("properties", {}),
         )
@@ -124,7 +124,9 @@ def render_filename(template: str, variables: dict[str, str]) -> str:
 
     Supported variables:
     - {{title}} - Page title
-    - {{date}} - Current date (formatted per config)
+    - {{date}} - Clip date, i.e. today (formatted per filename_date_format)
+    - {{published}} - Published date, falling back to the clip date when the
+      page has no parseable published date (formatted per filename_date_format)
     - {{slug}} - Slugified title
     - {{domain}} - URL domain
 

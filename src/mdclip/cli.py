@@ -32,7 +32,7 @@ from .extractor import (
     check_node_installed,
     extract_page,
 )
-from .frontmatter import build_frontmatter
+from .frontmatter import build_frontmatter, parse_datetime
 from .inputs import (
     InputType,
     detect_input_type,
@@ -434,11 +434,15 @@ def process_url(
         output_folder = Path.cwd()
         output_folder.mkdir(parents=True, exist_ok=True)
 
-    # Generate filename
-    filename_template = template.filename or "{{title}}"
+    # Generate filename: template key overrides the config-wide default
+    filename_template = template.filename or config.get("default_filename") or "{{title}}"
+    filename_date_format = config.get("filename_date_format", "%Y-%m-%d")
+    clip_date = datetime.now()
+    published_date = parse_datetime(metadata["published"] or "") or clip_date
     filename_vars = {
         "title": title,
-        "date": datetime.now().strftime(config.get("filename_date_format", "%Y-%m-%d")),
+        "date": clip_date.strftime(filename_date_format),
+        "published": published_date.strftime(filename_date_format),
         "slug": slugify(title),
         "domain": urlparse(url).netloc,
     }

@@ -4,7 +4,6 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from mdclip.output import detect_formatter, format_markdown
 

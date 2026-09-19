@@ -53,6 +53,48 @@ WEEKDAY_PREFIX_PATTERN = re.compile(
 AMPM_PATTERN = re.compile(r"(\d+:\d+)\s*(am|pm)", re.IGNORECASE)
 
 
+def parse_datetime(date_str: str) -> datetime | None:
+    """Parse a date string in any of the common formats.
+
+    Args:
+        date_str: The date string to parse (e.g., "Weds 05/08/2025, 2:30pm")
+
+    Returns:
+        A datetime, or None if the string does not match any known format
+    """
+    if not date_str or not isinstance(date_str, str):
+        return None
+
+    date_str = date_str.strip()
+
+    # Normalize: strip weekday prefix (e.g., "Weds " -> "")
+    date_str = WEEKDAY_PREFIX_PATTERN.sub("", date_str)
+
+    # Normalize: remove space before am/pm (e.g., "2:30 pm" -> "2:30pm")
+    date_str = AMPM_PATTERN.sub(r"\1\2", date_str)
+
+    # Normalize: strip timezone abbreviations like "EST", "PST"
+    date_str = re.sub(r"\s+[A-Z]{2,4}$", "", date_str)
+
+    # Try each format
+    for fmt in DATE_FORMATS:
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+
+    # Try with lowercase am/pm
+    date_str_lower = date_str.lower()
+    for fmt in DATE_FORMATS:
+        if "%p" in fmt:
+            try:
+                return datetime.strptime(date_str_lower, fmt.lower())
+            except ValueError:
+                continue
+
+    return None
+
+
 def parse_date(date_str: str, output_format: str = "%Y-%m-%d") -> str:
     """Parse a date string and format it consistently.
 
@@ -70,38 +112,10 @@ def parse_date(date_str: str, output_format: str = "%Y-%m-%d") -> str:
     if not date_str or not isinstance(date_str, str):
         return date_str if date_str else ""
 
-    original = date_str
-    date_str = date_str.strip()
-
-    # Normalize: strip weekday prefix (e.g., "Weds " -> "")
-    date_str = WEEKDAY_PREFIX_PATTERN.sub("", date_str)
-
-    # Normalize: remove space before am/pm (e.g., "2:30 pm" -> "2:30pm")
-    date_str = AMPM_PATTERN.sub(r"\1\2", date_str)
-
-    # Normalize: strip timezone abbreviations like "EST", "PST"
-    date_str = re.sub(r"\s+[A-Z]{2,4}$", "", date_str)
-
-    # Try each format
-    for fmt in DATE_FORMATS:
-        try:
-            parsed = datetime.strptime(date_str, fmt)
-            return parsed.strftime(output_format)
-        except ValueError:
-            continue
-
-    # Try with lowercase am/pm
-    date_str_lower = date_str.lower()
-    for fmt in DATE_FORMATS:
-        if "%p" in fmt:
-            try:
-                parsed = datetime.strptime(date_str_lower, fmt.lower())
-                return parsed.strftime(output_format)
-            except ValueError:
-                continue
-
-    # Fallback: return original string
-    return original
+    parsed = parse_datetime(date_str)
+    if parsed is None:
+        return date_str
+    return parsed.strftime(output_format)
 
 
 def build_frontmatter(

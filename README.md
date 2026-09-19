@@ -173,6 +173,10 @@ vault: ~/Documents/Obsidian/Notes
 
 # Date format (for frontmatter 'created' and filenames)
 date_format: "%Y-%m-%d"
+filename_date_format: "%Y-%m-%d"
+
+# Default filename for templates without their own 'filename' key
+default_filename: "{{title}} {{published}}"
 
 # Default output folder (relative to vault)
 default_folder: Capture
@@ -238,7 +242,9 @@ templates:
 - Regex pattern: `"^https://[\\w-]+\\.github\\.io/"`
 - Built-in filter: `"@academic"` (see below)
 
-**Filename variables**: `{{title}}`, `{{date}}`, `{{slug}}`, `{{domain}}`
+**Filename variables**: `{{title}}`, `{{published}}`, `{{date}}`, `{{slug}}`, `{{domain}}`
+
+`{{published}}` is the page's published date, falling back to the clip date when none is found; `{{date}}` is always the clip date. Both use `filename_date_format`. A template's `filename` key is optional: templates without one use the config-wide `default_filename` (default `"{{title}} {{published}}"`).
 
 ### Built-in Triggers
 
